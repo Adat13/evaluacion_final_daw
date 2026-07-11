@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo Conceptual (Chen) - Sistema Académico</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-page: #0b0f19;
+            --bg-canvas: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.75);
+            --bg-sidebar: rgba(15, 23, 42, 0.9);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            
+            /* Chen Notation Colors */
+            --accent-entity: #3b82f6;          /* Blue for Entities */
+            --accent-entity-glow: rgba(59, 130, 246, 0.25);
+            
+            --accent-relationship: #f59e0b;    /* Amber for Relationships */
+            --accent-relationship-glow: rgba(245, 158, 11, 0.25);
+            
+            --accent-attribute: #10b981;       /* Emerald for Attributes */
+            --accent-attribute-glow: rgba(16, 185, 129, 0.15);
+            
+            --grid-color: rgba(255, 255, 255, 0.03);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        [data-theme="light"] {
+            --bg-page: #f1f5f9;
+            --bg-canvas: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-sidebar: rgba(248, 250, 252, 0.95);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            
+            --accent-entity: #2563eb;
+            --accent-entity-glow: rgba(37, 99, 235, 0.1);
+            
+            --accent-relationship: #d97706;
+            --accent-relationship-glow: rgba(217, 119, 6, 0.1);
+            
+            --accent-attribute: #059669;
+            --accent-attribute-glow: rgba(5, 150, 105, 0.08);
+            
+            --grid-color: rgba(0, 0, 0, 0.03);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            background-image: 
+                radial-gradient(var(--grid-color) 1.5px, transparent 1.5px), 
+                radial-gradient(var(--grid-color) 1.5px, transparent 1.5px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* The Zoomable/Pannable Canvas */
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4000px;
+            height: 4000px;
+            transform-origin: 0 0;
+        }
+
+        /* SVG Connections Layer */
+        #connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: var(--text-secondary);
+            stroke-width: 2;
+            opacity: 0.4;
+            transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s;
+        }
+
+        .connection-line.active {
+            stroke: var(--accent-entity);
+            stroke-width: 3;
+            opacity: 0.95;
+            filter: drop-shadow(0 0 4px var(--accent-entity));
+        }
+
+        .connection-line.rel-active {
+            stroke: var(--accent-relationship);
+            stroke-width: 3;
+            opacity: 0.95;
+            filter: drop-shadow(0 0 4px var(--accent-relationship));
+        }
+
+        .attribute-line {
+            fill: none;
+            stroke: var(--text-secondary);
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+            opacity: 0.35;
+        }
+
+        /* HTML Nodes Layer */
+        #nodes-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .node {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.1s, border-color 0.2s;
+        }
+
+        /* Entity Node (Chen Style: Simple Rectangle) */
+        .entity-node {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid var(--accent-entity);
+            border-radius: 6px;
+            width: 160px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px var(--accent-entity-glow), var(--card-shadow);
+        }
+
+        .entity-node:hover, .entity-node.selected {
+            box-shadow: 0 0 25px var(--accent-entity), var(--card-shadow);
+            transform: translateY(-2px);
+        }
+
+        .entity-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        /* Relationship Node (Chen Style: Diamond) */
+        .relationship-node {
+            width: 90px;
+            height: 90px;
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 2px solid var(--accent-relationship);
+            transform: rotate(45deg);
+            box-shadow: 0 4px 15px var(--accent-relationship-glow), var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .relationship-node:hover, .relationship-node.selected {
+            box-shadow: 0 0 20px var(--accent-relationship), var(--card-shadow);
+            transform: rotate(45deg) scale(1.05);
+        }
+
+        .relationship-inner {
+            transform: rotate(-45deg);
+            text-align: center;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.72rem;
+            width: 110px; /* Fits beautifully inside the 127px diagonal of a 90px diamond */
+            line-height: 1.2;
+            word-break: keep-all; /* Prevents word splitting */
+            overflow-wrap: normal;
+        }
+
+        /* Attribute Node (Chen Style: Ellipse/Oval) */
+        .attribute-oval {
+            position: absolute;
+            background: var(--bg-card);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1.5px solid var(--accent-attribute);
+            border-radius: 50%;
+            padding: 6px 14px;
+            min-width: 100px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px var(--accent-attribute-glow), var(--card-shadow);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+
+        .attribute-oval:hover {
+            border-color: #34d399;
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.3), var(--card-shadow);
+            transform: scale(1.05);
+        }
+
+        .attribute-oval-text {
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        /* Primary Key: Underlined */
+        .attribute-oval.pk .attribute-oval-text {
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        /* Cardinality Label */
+        .cardinality-label {
+            position: absolute;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 3;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transform: translate(-50%, -50%);
+        }
+
+        /* Sidebar Panel */
+        #sidebar {
+            width: 400px;
+            height: 100%;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.25);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        /* Detail Card */
+        .detail-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .detail-header.entity { color: var(--accent-entity); }
+        .detail-header.relationship { color: var(--accent-relationship); }
+
+        .detail-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* SQL View */
+        .sql-container {
+            position: relative;
+            background: #05070f;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            max-height: 300px;
+        }
+
+        .sql-code {
+            color: #e2e8f0;
+            white-space: pre;
+        }
+
+        .sql-keyword { color: #ff79c6; font-weight: bold; }
+        .sql-type { color: #8be9fd; }
+        .sql-comment { color: #6272a4; font-style: italic; }
+
+        /* Floating Controls */
+        .controls-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            display: flex;
+            gap: 12px;
+            z-index: 5;
+        }
+
+        .control-btn {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover, .control-btn.active {
+            border-color: var(--accent-entity);
+            color: var(--accent-entity);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Action Buttons */
+        .btn-primary {
+            background: var(--accent-entity);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* Legend */
+        .legend-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.85rem;
+        }
+
+        .legend-shape {
+            width: 32px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legend-shape.entity {
+            border: 1.5px solid var(--accent-entity);
+            border-radius: 3px;
+            background: var(--accent-entity-glow);
+        }
+
+        .legend-shape.relationship {
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--accent-relationship);
+            background: var(--accent-relationship-glow);
+            transform: rotate(45deg);
+        }
+
+        .legend-shape.attribute {
+            border: 1.5px solid var(--accent-attribute);
+            border-radius: 50%;
+            background: var(--accent-attribute-glow);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Quick Instructions */
+        .instructions-box {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .instructions-box ul {
+            padding-left: 16px;
+            margin-top: 6px;
+        }
+
+        /* Modal DDL */
+        #modal-sql {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-page);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 700px;
+            max-width: 90vw;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- Canvas Area -->
+    <div id="canvas-container">
+        <div id="canvas" style="transform: translate(-383.006px, -188.256px) scale(0.661157);">
+            <svg id="connections-svg">
+                <!-- SVG Filter for Glow Effect -->
+                <defs>
+                    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+                        <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                    </filter>
+                </defs>
+            <line x1="180" y1="120" x2="180" y2="-10" class="attribute-line"></line><line x1="180" y1="120" x2="88" y2="28" class="attribute-line"></line><line x1="180" y1="120" x2="272" y2="28" class="attribute-line"></line><line x1="180" y1="120" x2="2" y2="93" class="attribute-line"></line><line x1="180" y1="420" x2="50" y2="420" class="attribute-line"></line><line x1="180" y1="420" x2="88" y2="512" class="attribute-line"></line><line x1="180" y1="420" x2="88" y2="328" class="attribute-line"></line><line x1="180" y1="720" x2="312" y2="779" class="attribute-line"></line><line x1="180" y1="720" x2="45" y2="787" class="attribute-line"></line><line x1="180" y1="720" x2="-9" y2="698" class="attribute-line"></line><line x1="180" y1="720" x2="344" y2="696" class="attribute-line"></line><line x1="180" y1="1020" x2="-9" y2="994" class="attribute-line"></line><line x1="180" y1="1020" x2="366" y2="993" class="attribute-line"></line><line x1="180" y1="1020" x2="80" y2="936" class="attribute-line"></line><line x1="180" y1="1020" x2="326" y2="930" class="attribute-line"></line><line x1="680" y1="420" x2="680" y2="290" class="attribute-line"></line><line x1="680" y1="420" x2="588" y2="328" class="attribute-line"></line><line x1="680" y1="420" x2="841" y2="438" class="attribute-line"></line><line x1="680" y1="420" x2="772" y2="512" class="attribute-line"></line><line x1="680" y1="420" x2="772" y2="328" class="attribute-line"></line><line x1="680" y1="420" x2="834" y2="371" class="attribute-line"></line><line x1="680" y1="720" x2="550" y2="720" class="attribute-line"></line><line x1="680" y1="720" x2="588" y2="812" class="attribute-line"></line><line x1="680" y1="720" x2="588" y2="628" class="attribute-line"></line><line x1="1180" y1="420" x2="1180" y2="290" class="attribute-line"></line><line x1="1180" y1="420" x2="1088" y2="328" class="attribute-line"></line><line x1="1180" y1="420" x2="1272" y2="328" class="attribute-line"></line><line x1="1180" y1="420" x2="1366" y2="370" class="attribute-line"></line><line x1="1180" y1="1020" x2="1161" y2="1155" class="attribute-line"></line><line x1="1180" y1="1020" x2="1252" y2="1117" class="attribute-line"></line><line x1="1180" y1="1020" x2="1038" y2="1133" class="attribute-line"></line><line x1="1580" y1="1020" x2="1750" y2="1023" class="attribute-line"></line><line x1="1580" y1="1020" x2="1672" y2="928" class="attribute-line"></line><line x1="1580" y1="1020" x2="1580" y2="890" class="attribute-line"></line><line x1="1580" y1="1020" x2="1672" y2="1112" class="attribute-line"></line><line x1="1580" y1="1020" x2="1580" y2="1150" class="attribute-line"></line><line x1="680" y1="1020" x2="534" y2="953" class="attribute-line"></line><line x1="680" y1="1020" x2="511" y2="1036" class="attribute-line"></line><line x1="680" y1="1320" x2="675" y2="1406" class="attribute-line"></line><line x1="680" y1="1320" x2="559" y2="1390" class="attribute-line"></line><line x1="680" y1="1320" x2="809" y2="1406" class="attribute-line"></line><path d="M 184.33155080213905 150 L 200.5693579605447 262.46184957858725" class="connection-line"></path><path d="M 187.16814159292036 390 L 196.5421702824938 350.76795400289626" class="connection-line"></path><path d="M 185.7323998015326 450 L 201.8817026725693 534.5159275180998" class="connection-line"></path><path d="M 186.43970024861318 690 L 200.8830867118822 622.7140119617546" class="connection-line"></path><path d="M 183.7200956937799 750 L 193.89977029058315 832.0920382275966" class="connection-line"></path><path d="M 184.07068062827224 990 L 193.38692539004631 921.3413730096909" class="connection-line"></path><path d="M 159.61165048543688 1050 Q 163.03589147954312 1116.1244085968863 100.29406648744474 1137.2815878827598" class="connection-line"></path><path d="M 159.61165048543688 1050 Q 96.86982549333851 1071.1571792858733 100.29406648744474 1137.2815878827598" class="connection-line"></path><path d="M 1182.4035608308604 450 L 1203.4061746946861 712.1437360040442" class="connection-line"></path><path d="M 1183.0798479087453 990 L 1202.4043821965056 801.7647215673705" class="connection-line"></path><path d="M 240.65693430656935 1050 L 416.66378486367876 1137.0503195896172" class="connection-line"></path><path d="M 1100 1035.159059474412 L 501.21324416503796 1148.6221100268185" class="connection-line"></path><path d="M 1500 1028.8331242158092 L 1425.478179448917 1037.0613804372588" class="connection-line"></path><path d="M 1260 1028.7671232876712 L 1336.017809705903 1037.097842159551" class="connection-line"></path><path d="M 260 430.6859205776173 L 412.3961520457707 451.04208529131233" class="connection-line"></path><path d="M 600 433.27354260089686 L 501.393095162619 449.63432950216634" class="connection-line"></path><path d="M 684.3315508021391 450 L 700.5693579605447 562.4618495785872" class="connection-line"></path><path d="M 687.1681415929204 690 L 696.5421702824938 650.7679540028963" class="connection-line"></path><path d="M 1144.2245989304813 450 L 991.4810751593549 578.0853764358773" class="connection-line"></path><path d="M 753.5398230088496 690 L 915.3336346446941 623.9974703435003" class="connection-line"></path><path d="M 683.9649681528663 750 L 694.8538213110412 832.3879491967936" class="connection-line"></path><path d="M 684.3531468531469 990 L 694.2879558987107 921.5336051317765" class="connection-line"></path><path d="M 1100 999.9784250269687 L 991.9036410235631 972.9251830824883" class="connection-line"></path><path d="M 760 1002.7027027027027 L 904.266362555206 971.5099756637393" class="connection-line"></path><path d="M 679.9175824175824 1050 L 679.6236259071003 1157.000169815486" class="connection-line"></path><path d="M 679.8728813559322 1290 L 679.6906762543504 1246.999596026698" class="connection-line"></path></svg>
+            <div id="nodes-layer"><div id="node-FAC" class="node entity-node" style="left: 100px; top: 90px;"><div class="entity-label">FACULTAD</div></div><div id="attr-FAC-0" class="attribute-oval pk" style="left: 130px; top: -31px;"><span class="attribute-oval-text">id_facultad</span></div><div id="attr-FAC-1" class="attribute-oval " style="left: 38px; top: 7px;"><span class="attribute-oval-text">nombre</span></div><div id="attr-FAC-2" class="attribute-oval " style="left: 222px; top: 7px;"><span class="attribute-oval-text">siglas</span></div><div id="attr-FAC-3" class="attribute-oval " style="left: -48px; top: 72px;"><span class="attribute-oval-text">fecha_creacion</span></div><div id="node-ESP" class="node entity-node" style="left: 100px; top: 390px;"><div class="entity-label">ESPECIALIDAD</div></div><div id="attr-ESP-0" class="attribute-oval pk" style="left: 0px; top: 399px;"><span class="attribute-oval-text">id_especialidad</span></div><div id="attr-ESP-1" class="attribute-oval " style="left: 38px; top: 491px;"><span class="attribute-oval-text">nombre</span></div><div id="attr-ESP-2" class="attribute-oval " style="left: 38px; top: 307px;"><span class="attribute-oval-text">codigo</span></div><div id="node-PLAN" class="node entity-node" style="left: 100px; top: 690px;"><div class="entity-label">PLAN_ESTUDIOS</div></div><div id="attr-PLAN-0" class="attribute-oval pk" style="left: 262px; top: 758px;"><span class="attribute-oval-text">id_plan</span></div><div id="attr-PLAN-1" class="attribute-oval " style="left: -5px; top: 766px;"><span class="attribute-oval-text">codigo_plan</span></div><div id="attr-PLAN-2" class="attribute-oval " style="left: -59px; top: 677px;"><span class="attribute-oval-text">anio_aprobacion</span></div><div id="attr-PLAN-3" class="attribute-oval " style="left: 294px; top: 675px;"><span class="attribute-oval-text">activo</span></div><div id="node-CUR" class="node entity-node" style="left: 100px; top: 990px;"><div class="entity-label">CURSO</div></div><div id="attr-CUR-0" class="attribute-oval pk" style="left: -59px; top: 973px;"><span class="attribute-oval-text">id_curso</span></div><div id="attr-CUR-1" class="attribute-oval " style="left: 316px; top: 972px;"><span class="attribute-oval-text">codigo_curso</span></div><div id="attr-CUR-2" class="attribute-oval " style="left: 30px; top: 915px;"><span class="attribute-oval-text">nombre</span></div><div id="attr-CUR-3" class="attribute-oval " style="left: 276px; top: 909px;"><span class="attribute-oval-text">creditos</span></div><div id="node-EST" class="node entity-node" style="left: 600px; top: 390px;"><div class="entity-label">ESTUDIANTE</div></div><div id="attr-EST-0" class="attribute-oval pk" style="left: 630px; top: 269px;"><span class="attribute-oval-text">id_estudiante</span></div><div id="attr-EST-1" class="attribute-oval " style="left: 538px; top: 307px;"><span class="attribute-oval-text">codigo_estudiante</span></div><div id="attr-EST-2" class="attribute-oval " style="left: 791px; top: 417px;"><span class="attribute-oval-text">nombres</span></div><div id="attr-EST-3" class="attribute-oval " style="left: 722px; top: 491px;"><span class="attribute-oval-text">apellidos</span></div><div id="attr-EST-4" class="attribute-oval " style="left: 722px; top: 307px;"><span class="attribute-oval-text">dni</span></div><div id="attr-EST-5" class="attribute-oval " style="left: 784px; top: 350px;"><span class="attribute-oval-text">email</span></div><div id="node-MAT" class="node entity-node" style="left: 600px; top: 690px;"><div class="entity-label">MATRICULA</div></div><div id="attr-MAT-0" class="attribute-oval pk" style="left: 500px; top: 699px;"><span class="attribute-oval-text">id_matricula</span></div><div id="attr-MAT-1" class="attribute-oval " style="left: 538px; top: 791px;"><span class="attribute-oval-text">fecha_matricula</span></div><div id="attr-MAT-2" class="attribute-oval " style="left: 538px; top: 607px;"><span class="attribute-oval-text">costo_total</span></div><div id="node-PER" class="node entity-node" style="left: 1100px; top: 390px;"><div class="entity-label">PERIODO_ACAD</div></div><div id="attr-PER-0" class="attribute-oval pk" style="left: 1130px; top: 269px;"><span class="attribute-oval-text">id_periodo</span></div><div id="attr-PER-1" class="attribute-oval " style="left: 1038px; top: 307px;"><span class="attribute-oval-text">codigo_periodo</span></div><div id="attr-PER-2" class="attribute-oval " style="left: 1222px; top: 307px;"><span class="attribute-oval-text">anio</span></div><div id="attr-PER-3" class="attribute-oval " style="left: 1316px; top: 349px;"><span class="attribute-oval-text">activo</span></div><div id="node-SEC" class="node entity-node" style="left: 1100px; top: 990px;"><div class="entity-label">SECCION</div></div><div id="attr-SEC-0" class="attribute-oval pk" style="left: 1111px; top: 1134px;"><span class="attribute-oval-text">id_seccion</span></div><div id="attr-SEC-1" class="attribute-oval " style="left: 1202px; top: 1096px;"><span class="attribute-oval-text">codigo_seccion</span></div><div id="attr-SEC-2" class="attribute-oval " style="left: 988px; top: 1112px;"><span class="attribute-oval-text">capacidad</span></div><div id="node-DOC" class="node entity-node" style="left: 1500px; top: 990px;"><div class="entity-label">DOCENTE</div></div><div id="attr-DOC-0" class="attribute-oval pk" style="left: 1700px; top: 1002px;"><span class="attribute-oval-text">id_docente</span></div><div id="attr-DOC-1" class="attribute-oval " style="left: 1622px; top: 907px;"><span class="attribute-oval-text">documento</span></div><div id="attr-DOC-2" class="attribute-oval " style="left: 1530px; top: 869px;"><span class="attribute-oval-text">nombres</span></div><div id="attr-DOC-3" class="attribute-oval " style="left: 1622px; top: 1091px;"><span class="attribute-oval-text">apellidos</span></div><div id="attr-DOC-4" class="attribute-oval " style="left: 1530px; top: 1129px;"><span class="attribute-oval-text">email</span></div><div id="node-DET" class="node entity-node" style="left: 600px; top: 990px;"><div class="entity-label">DETALLE_MATRICULA</div></div><div id="attr-DET-0" class="attribute-oval pk" style="left: 484px; top: 932px;"><span class="attribute-oval-text">id_detalle</span></div><div id="attr-DET-1" class="attribute-oval " style="left: 461px; top: 1015px;"><span class="attribute-oval-text">estado_curso</span></div><div id="node-NOT" class="node entity-node" style="left: 600px; top: 1290px;"><div class="entity-label">NOTAS</div></div><div id="attr-NOT-0" class="attribute-oval pk" style="left: 625px; top: 1385px;"><span class="attribute-oval-text">id_nota</span></div><div id="attr-NOT-1" class="attribute-oval " style="left: 509px; top: 1369px;"><span class="attribute-oval-text">nota_final</span></div><div id="attr-NOT-2" class="attribute-oval " style="left: 759px; top: 1385px;"><span class="attribute-oval-text">fecha_registro</span></div><div id="node-R1" class="node relationship-node" style="left: 162px; top: 262px;"><div class="relationship-inner">Tiene</div></div><div id="node-R2" class="node relationship-node" style="left: 165.327px; top: 533.716px;"><div class="relationship-inner">Contiene</div></div><div id="node-R3" class="node relationship-node" style="left: 154.438px; top: 831.75px;"><div class="relationship-inner">Incluye</div></div><div id="node-R4" class="node relationship-node" style="left: 30px; top: 1129.5px;"><div class="relationship-inner">Es prerrequisito</div></div><div id="node-R5" class="node relationship-node" style="left: 1162px; top: 712px;"><div class="relationship-inner">Organiza</div></div><div id="node-R6" class="node relationship-node" style="left: 412px; top: 1112px;"><div class="relationship-inner">Se dicta</div></div><div id="node-R7" class="node relationship-node" style="left: 1335.75px; top: 997px;"><div class="relationship-inner">Dicta</div></div><div id="node-R13" class="node relationship-node" style="left: 412px; top: 412px;"><div class="relationship-inner">Pertenece</div></div><div id="node-R8" class="node relationship-node" style="left: 662px; top: 562px;"><div class="relationship-inner">Realiza</div></div><div id="node-R9" class="node relationship-node" style="left: 912px; top: 562px;"><div class="relationship-inner">Corresponde</div></div><div id="node-R10" class="node relationship-node" style="left: 655.75px; top: 832px;"><div class="relationship-inner">Conforma</div></div><div id="node-R11" class="node relationship-node" style="left: 903.25px; top: 917px;"><div class="relationship-inner">Pertenece</div></div><div id="node-R12" class="node relationship-node" style="left: 634.5px; top: 1157px;"><div class="relationship-inner">Recibe</div></div></div>
+        <div class="cardinality-label" style="left: 187.904px; top: 174.742px;">1</div><div class="cardinality-label" style="left: 189.23px; top: 381.369px;">N</div><div class="cardinality-label" style="left: 189.285px; top: 468.594px;">1</div><div class="cardinality-label" style="left: 189.617px; top: 675.197px;">N</div><div class="cardinality-label" style="left: 185.96px; top: 768.06px;">1</div><div class="cardinality-label" style="left: 186.12px; top: 974.895px;">N</div><div class="cardinality-label" style="left: 157.916px; top: 1076.92px;">1</div><div class="cardinality-label" style="left: 135.208px; top: 1061.49px;">N</div><div class="cardinality-label" style="left: 1187.02px; top: 507.672px;">1</div><div class="cardinality-label" style="left: 1187.33px; top: 948.588px;">N</div><div class="cardinality-label" style="left: 279.378px; top: 1069.15px;">1</div><div class="cardinality-label" style="left: 968.267px; top: 1060.12px;">N</div><div class="cardinality-label" style="left: 1483.61px; top: 1030.64px;">1</div><div class="cardinality-label" style="left: 1276.72px; top: 1030.6px;">N</div><div class="cardinality-label" style="left: 293.527px; top: 435.164px;">1</div><div class="cardinality-label" style="left: 578.306px; top: 436.873px;">N</div><div class="cardinality-label" style="left: 687.904px; top: 474.742px;">1</div><div class="cardinality-label" style="left: 689.23px; top: 681.369px;">N</div><div class="cardinality-label" style="left: 1110.62px; top: 478.179px;">1</div><div class="cardinality-label" style="left: 789.134px; top: 675.479px;">N</div><div class="cardinality-label" style="left: 686.361px; top: 768.125px;">1</div><div class="cardinality-label" style="left: 686.539px; top: 974.937px;">N</div><div class="cardinality-label" style="left: 1076.22px; top: 994.027px;">1</div><div class="cardinality-label" style="left: 791.739px; top: 995.84px;">N</div><div class="cardinality-label" style="left: 679.853px; top: 1073.54px;">1</div><div class="cardinality-label" style="left: 679.833px; top: 1280.54px;">N</div></div>
+
+        <!-- Floating Controls -->
+        <div class="controls-panel">
+            <button class="control-btn" id="btn-zoom-in" title="Acercar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zoom-in" aria-hidden="true" class="lucide lucide-zoom-in"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line><line x1="11" x2="11" y1="8" y2="14"></line><line x1="8" x2="14" y1="11" y2="11"></line></svg></button>
+            <button class="control-btn" id="btn-zoom-out" title="Alejar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zoom-out" aria-hidden="true" class="lucide lucide-zoom-out"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line><line x1="8" x2="14" y1="11" y2="11"></line></svg></button>
+            <button class="control-btn" id="btn-zoom-reset" title="Restaurar Vista"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="maximize" aria-hidden="true" class="lucide lucide-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg></button>
+            <button class="control-btn active" id="btn-toggle-attributes" title="Mostrar/Ocultar Atributos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="tag" aria-hidden="true" class="lucide lucide-tag"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg></button>
+            <button class="control-btn" id="btn-theme-toggle" title="Cambiar Tema"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sun" aria-hidden="true" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></button>
+            <button class="control-btn" id="btn-auto-layout" title="Reorganizar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="grid" aria-hidden="true" class="lucide lucide-grid"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path><path d="M9 3v18"></path><path d="M15 3v18"></path></svg></button>
+        </div>
+    </div>
+
+    <!-- Sidebar Details -->
+    <div id="sidebar">
+        <div class="sidebar-header" style="flex-direction: column; gap: 10px; align-items: stretch; padding: 16px 24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <div class="sidebar-title">Modelo Conceptual</div>
+            </div>
+            <div style="display:flex; gap:8px; width:100%;">
+                <button class="btn-primary" id="btn-export-html" style="flex:1; background:var(--accent-attribute); justify-content:center;" title="Descarga el archivo HTML con tu distribución actual de nodos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" aria-hidden="true" class="lucide lucide-download"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg> Guardar Diseño
+                </button>
+                <button class="btn-primary" id="btn-export-sql" style="flex:1; justify-content:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="code-2" aria-hidden="true" class="lucide lucide-code-2"><path d="m18 16 4-4-4-4"></path><path d="m6 8-4 4 4 4"></path><path d="m14.5 4-5 16"></path></svg> Generar SQL
+                </button>
+            </div>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Dynamic Detail Section -->
+            <div id="detail-section">
+                    <div class="section-title">Selección</div>
+                    <div class="detail-card">
+                        <div class="detail-desc">
+                            Haz clic en cualquier entidad, relación o atributo para inspeccionar sus características y ver su descripción detallada.
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Legend Section -->
+            <div>
+                <div class="section-title">Notación de Chen</div>
+                <div class="legend-container">
+                    <div class="legend-item">
+                        <div class="legend-shape entity"></div>
+                        <span><strong>Entidad:</strong> Un objeto o concepto (ej. Facultad).</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-shape relationship"></div>
+                        <span><strong>Relación:</strong> Asociación entre dos entidades.</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-shape attribute"></div>
+                        <span><strong>Atributo:</strong> Propiedad de una entidad. El <u>subrayado</u> indica la Clave Primaria.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Instructions -->
+            <div>
+                <div class="section-title">Ayuda de Navegación</div>
+                <div class="instructions-box">
+                    <ul>
+                        <li><strong>Arrastrar:</strong> Mueve el fondo para navegar o arrastra las entidades (sus atributos las seguirán automáticamente).</li>
+                        <li><strong>Atributos:</strong> Usa el botón <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="tag" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle;" class="lucide lucide-tag"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg> para ocultar atributos y ver un modelo más limpio.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Modal -->
+    <div id="modal-sql">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="sidebar-title" style="display:flex; align-items:center; gap:8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="database" aria-hidden="true" style="color:var(--accent-entity);" class="lucide lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg> Script SQL DDL Generado
+                </h3>
+                <button class="control-btn" id="btn-close-modal" style="width:32px; height:32px; border-radius:6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary);">
+                    El motor infiere automáticamente las <strong>Llaves Foráneas (FK)</strong> basándose en las relaciones de cardinalidad del modelo conceptual.
+                </div>
+                <div class="sql-container" style="max-height: 50vh;">
+                    <code class="sql-code" id="full-sql-code"></code>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="btn-copy-sql">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="copy" aria-hidden="true" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> Copiar Código
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pure Conceptual Model Data (No FK attributes inside entities, only local attributes)
+        const initialNodes = {
+    "FAC": {
+        "id": "FAC",
+        "label": "FACULTAD",
+        "type": "entity",
+        "x": 100,
+        "y": 90,
+        "desc": "Representa las facultades o divisiones académicas principales de la universidad.",
+        "attributes": [
+            {
+                "name": "id_facultad",
+                "type": "INT",
+                "key": "PK",
+                "relX": 0,
+                "relY": -130
+            },
+            {
+                "name": "nombre",
+                "type": "VARCHAR(100)",
+                "relX": -92,
+                "relY": -92
+            },
+            {
+                "name": "siglas",
+                "type": "VARCHAR(10)",
+                "relX": 92,
+                "relY": -92
+            },
+            {
+                "name": "fecha_creacion",
+                "type": "DATE",
+                "relX": -178,
+                "relY": -27
+            }
+        ]
+    },
+    "ESP": {
+        "id": "ESP",
+        "label": "ESPECIALIDAD",
+        "type": "entity",
+        "x": 100,
+        "y": 390,
+        "desc": "Especialidad, carrera profesional o programa de estudios ofrecido.",
+        "attributes": [
+            {
+                "name": "id_especialidad",
+                "type": "INT",
+                "key": "PK",
+                "relX": -130,
+                "relY": 0
+            },
+            {
+                "name": "nombre",
+                "type": "VARCHAR(100)",
+                "relX": -92,
+                "relY": 92
+            },
+            {
+                "name": "codigo",
+                "type": "VARCHAR(10)",
+                "relX": -92,
+                "relY": -92
+            }
+        ]
+    },
+    "PLAN": {
+        "id": "PLAN",
+        "label": "PLAN_ESTUDIOS",
+        "type": "entity",
+        "x": 100,
+        "y": 690,
+        "desc": "Estructura curricular o currículo que contiene los cursos que el alumno debe aprobar.",
+        "attributes": [
+            {
+                "name": "id_plan",
+                "type": "INT",
+                "key": "PK",
+                "relX": 132,
+                "relY": 59
+            },
+            {
+                "name": "codigo_plan",
+                "type": "VARCHAR(20)",
+                "relX": -135,
+                "relY": 67
+            },
+            {
+                "name": "anio_aprobacion",
+                "type": "INT",
+                "relX": -189,
+                "relY": -22
+            },
+            {
+                "name": "activo",
+                "type": "BOOLEAN",
+                "relX": 164,
+                "relY": -24
+            }
+        ]
+    },
+    "CUR": {
+        "id": "CUR",
+        "label": "CURSO",
+        "type": "entity",
+        "x": 100,
+        "y": 990,
+        "desc": "Materias o asignaturas teóricas y prácticas que componen la oferta educativa.",
+        "attributes": [
+            {
+                "name": "id_curso",
+                "type": "INT",
+                "key": "PK",
+                "relX": -189,
+                "relY": -26
+            },
+            {
+                "name": "codigo_curso",
+                "type": "VARCHAR(15)",
+                "relX": 186,
+                "relY": -27
+            },
+            {
+                "name": "nombre",
+                "type": "VARCHAR(100)",
+                "relX": -100,
+                "relY": -84
+            },
+            {
+                "name": "creditos",
+                "type": "INT",
+                "relX": 146,
+                "relY": -90
+            }
+        ]
+    },
+    "EST": {
+        "id": "EST",
+        "label": "ESTUDIANTE",
+        "type": "entity",
+        "x": 600,
+        "y": 390,
+        "desc": "Alumnos inscritos que cursan una carrera en la institución.",
+        "attributes": [
+            {
+                "name": "id_estudiante",
+                "type": "INT",
+                "key": "PK",
+                "relX": 0,
+                "relY": -130
+            },
+            {
+                "name": "codigo_estudiante",
+                "type": "VARCHAR(15)",
+                "relX": -92,
+                "relY": -92
+            },
+            {
+                "name": "nombres",
+                "type": "VARCHAR(100)",
+                "relX": 161,
+                "relY": 18
+            },
+            {
+                "name": "apellidos",
+                "type": "VARCHAR(100)",
+                "relX": 92,
+                "relY": 92
+            },
+            {
+                "name": "dni",
+                "type": "VARCHAR(8)",
+                "relX": 92,
+                "relY": -92
+            },
+            {
+                "name": "email",
+                "type": "VARCHAR(100)",
+                "relX": 154,
+                "relY": -49
+            }
+        ]
+    },
+    "MAT": {
+        "id": "MAT",
+        "label": "MATRICULA",
+        "type": "entity",
+        "x": 600,
+        "y": 690,
+        "desc": "Registro de matrícula académica de un estudiante en un determinado periodo.",
+        "attributes": [
+            {
+                "name": "id_matricula",
+                "type": "INT",
+                "key": "PK",
+                "relX": -130,
+                "relY": 0
+            },
+            {
+                "name": "fecha_matricula",
+                "type": "DATE",
+                "relX": -92,
+                "relY": 92
+            },
+            {
+                "name": "costo_total",
+                "type": "DECIMAL(10,2)",
+                "relX": -92,
+                "relY": -92
+            }
+        ]
+    },
+    "PER": {
+        "id": "PER",
+        "label": "PERIODO_ACAD",
+        "type": "entity",
+        "x": 1100,
+        "y": 390,
+        "desc": "Ciclos académicos de la institución (ej. Primer semestre, segundo semestre).",
+        "attributes": [
+            {
+                "name": "id_periodo",
+                "type": "INT",
+                "key": "PK",
+                "relX": 0,
+                "relY": -130
+            },
+            {
+                "name": "codigo_periodo",
+                "type": "VARCHAR(10)",
+                "relX": -92,
+                "relY": -92
+            },
+            {
+                "name": "anio",
+                "type": "INT",
+                "relX": 92,
+                "relY": -92
+            },
+            {
+                "name": "activo",
+                "type": "BOOLEAN",
+                "relX": 186,
+                "relY": -50
+            }
+        ]
+    },
+    "SEC": {
+        "id": "SEC",
+        "label": "SECCION",
+        "type": "entity",
+        "x": 1100,
+        "y": 990,
+        "desc": "Grupo u horario asignado a un curso determinado en un periodo específico.",
+        "attributes": [
+            {
+                "name": "id_seccion",
+                "type": "INT",
+                "key": "PK",
+                "relX": -19,
+                "relY": 135
+            },
+            {
+                "name": "codigo_seccion",
+                "type": "VARCHAR(10)",
+                "relX": 72,
+                "relY": 97
+            },
+            {
+                "name": "capacidad",
+                "type": "INT",
+                "relX": -142,
+                "relY": 113
+            }
+        ]
+    },
+    "DOC": {
+        "id": "DOC",
+        "label": "DOCENTE",
+        "type": "entity",
+        "x": 1500,
+        "y": 990,
+        "desc": "Profesores encargados del dictado de clases en las distintas secciones.",
+        "attributes": [
+            {
+                "name": "id_docente",
+                "type": "INT",
+                "key": "PK",
+                "relX": 170,
+                "relY": 3
+            },
+            {
+                "name": "documento",
+                "type": "VARCHAR(12)",
+                "relX": 92,
+                "relY": -92
+            },
+            {
+                "name": "nombres",
+                "type": "VARCHAR(100)",
+                "relX": 0,
+                "relY": -130
+            },
+            {
+                "name": "apellidos",
+                "type": "VARCHAR(100)",
+                "relX": 92,
+                "relY": 92
+            },
+            {
+                "name": "email",
+                "type": "VARCHAR(100)",
+                "relX": 0,
+                "relY": 130
+            }
+        ]
+    },
+    "DET": {
+        "id": "DET",
+        "label": "DETALLE_MATRICULA",
+        "type": "entity",
+        "x": 600,
+        "y": 990,
+        "desc": "Detalle de cada curso y sección asignado en la matrícula de un alumno.",
+        "attributes": [
+            {
+                "name": "id_detalle",
+                "type": "INT",
+                "key": "PK",
+                "relX": -146,
+                "relY": -67
+            },
+            {
+                "name": "estado_curso",
+                "type": "VARCHAR(20)",
+                "relX": -169,
+                "relY": 16
+            }
+        ]
+    },
+    "NOT": {
+        "id": "NOT",
+        "label": "NOTAS",
+        "type": "entity",
+        "x": 600,
+        "y": 1290,
+        "desc": "Registro de calificaciones obtenidas por el alumno.",
+        "attributes": [
+            {
+                "name": "id_nota",
+                "type": "INT",
+                "key": "PK",
+                "relX": -5,
+                "relY": 86
+            },
+            {
+                "name": "nota_final",
+                "type": "DECIMAL(4,2)",
+                "relX": -121,
+                "relY": 70
+            },
+            {
+                "name": "fecha_registro",
+                "type": "TIMESTAMP",
+                "relX": 129,
+                "relY": 86
+            }
+        ]
+    },
+    "R1": {
+        "id": "R1",
+        "label": "Tiene",
+        "type": "relationship",
+        "x": 162,
+        "y": 262,
+        "desc": "Vincula una Facultad con sus Especialidades asociadas."
+    },
+    "R2": {
+        "id": "R2",
+        "label": "Contiene",
+        "type": "relationship",
+        "x": 165.32750000000001,
+        "y": 533.71625,
+        "desc": "Vincula una Especialidad con sus Planes de Estudio."
+    },
+    "R3": {
+        "id": "R3",
+        "label": "Incluye",
+        "type": "relationship",
+        "x": 154.4375,
+        "y": 831.75,
+        "desc": "Vincula los cursos que forman parte de un Plan de Estudios."
+    },
+    "R4": {
+        "id": "R4",
+        "label": "Es prerrequisito",
+        "type": "relationship",
+        "x": 30.000000000000004,
+        "y": 1129.5,
+        "desc": "Mapea la dependencia curricular entre cursos (un curso es prerrequisito de otro)."
+    },
+    "R5": {
+        "id": "R5",
+        "label": "Organiza",
+        "type": "relationship",
+        "x": 1162,
+        "y": 712,
+        "desc": "Asocia las secciones abiertas a un periodo académico específico."
+    },
+    "R6": {
+        "id": "R6",
+        "label": "Se dicta",
+        "type": "relationship",
+        "x": 412,
+        "y": 1112,
+        "desc": "Indica los cursos asignados a las diferentes secciones."
+    },
+    "R7": {
+        "id": "R7",
+        "label": "Dicta",
+        "type": "relationship",
+        "x": 1335.75,
+        "y": 997,
+        "desc": "Mapea qué docente es asignado a dictar una sección."
+    },
+    "R13": {
+        "id": "R13",
+        "label": "Pertenece",
+        "type": "relationship",
+        "x": 412,
+        "y": 412,
+        "desc": "Relaciona al estudiante con la especialidad o carrera que cursa."
+    },
+    "R8": {
+        "id": "R8",
+        "label": "Realiza",
+        "type": "relationship",
+        "x": 662,
+        "y": 562,
+        "desc": "Registra qué estudiante realiza una matrícula."
+    },
+    "R9": {
+        "id": "R9",
+        "label": "Corresponde",
+        "type": "relationship",
+        "x": 912,
+        "y": 562,
+        "desc": "Asocia la matrícula al periodo académico correspondiente."
+    },
+    "R10": {
+        "id": "R10",
+        "label": "Conforma",
+        "type": "relationship",
+        "x": 655.75,
+        "y": 832,
+        "desc": "Vincula la matrícula general con los cursos detallados inscritos."
+    },
+    "R11": {
+        "id": "R11",
+        "label": "Pertenece",
+        "type": "relationship",
+        "x": 903.25,
+        "y": 917,
+        "desc": "Vincula la sección específica al detalle de matrícula."
+    },
+    "R12": {
+        "id": "R12",
+        "label": "Recibe",
+        "type": "relationship",
+        "x": 634.5,
+        "y": 1157,
+        "desc": "Relaciona las notas registradas con un curso matriculado."
+    }
+};
+
+        // Connections Definition
+        const connections = [
+            { from: 'FAC', to: 'R1', card: '1' },
+            { from: 'ESP', to: 'R1', card: 'N' },
+            
+            { from: 'ESP', to: 'R2', card: '1' },
+            { from: 'PLAN', to: 'R2', card: 'N' },
+            
+            { from: 'PLAN', to: 'R3', card: '1' },
+            { from: 'CUR', to: 'R3', card: 'N' },
+            
+            // Self loop for CUR -> R4 -> CUR
+            { from: 'CUR', to: 'R4', card: '1' },
+            { from: 'CUR', to: 'R4', card: 'N' },
+            
+            { from: 'PER', to: 'R5', card: '1' },
+            { from: 'SEC', to: 'R5', card: 'N' },
+            
+            { from: 'CUR', to: 'R6', card: '1' },
+            { from: 'SEC', to: 'R6', card: 'N' },
+            
+            { from: 'DOC', to: 'R7', card: '1' },
+            { from: 'SEC', to: 'R7', card: 'N' },
+            
+            { from: 'ESP', to: 'R13', card: '1' },
+            { from: 'EST', to: 'R13', card: 'N' },
+            
+            { from: 'EST', to: 'R8', card: '1' },
+            { from: 'MAT', to: 'R8', card: 'N' },
+            
+            { from: 'PER', to: 'R9', card: '1' },
+            { from: 'MAT', to: 'R9', card: 'N' },
+            
+            { from: 'MAT', to: 'R10', card: '1' },
+            { from: 'DET', to: 'R10', card: 'N' },
+            
+            { from: 'SEC', to: 'R11', card: '1' },
+            { from: 'DET', to: 'R11', card: 'N' },
+            
+            { from: 'DET', to: 'R12', card: '1' },
+            { from: 'NOT', to: 'R12', card: 'N' }
+        ];
+
+        // State Management
+        let nodes = JSON.parse(localStorage.getItem('er_nodes_pos_v4')) || initialNodes;
+        let activeTheme = 'dark';
+        let zoom = 0.8;
+        let panX = 60;
+        let panY = 20;
+        let selectedNodeId = null;
+        let showAttributes = true;
+
+        // Custom offsets for attributes in Chen notation to point away from relationship lines
+        function initializeAttributeOffsets() {
+            Object.values(nodes).forEach(node => {
+                if (node.type !== 'entity') return;
+                const count = node.attributes.length;
+                node.attributes.forEach((attr, idx) => {
+                    if (attr.relX === undefined || attr.relY === undefined) {
+                        let angleDeg;
+                        if (node.id === 'FAC') {
+                            angleDeg = [-90, -135, -45, 180][idx];
+                        } else if (node.id === 'ESP') {
+                            angleDeg = [180, 135, 225][idx];
+                        } else if (node.id === 'PLAN') {
+                            angleDeg = [45, 135, 225, 315][idx];
+                        } else if (node.id === 'CUR') {
+                            angleDeg = [90, 135, 220, 300][idx];
+                        } else if (node.id === 'EST') {
+                            angleDeg = [-90, -135, 0, 45, -45, -15][idx];
+                        } else if (node.id === 'MAT') {
+                            angleDeg = [180, 135, 225][idx];
+                        } else if (node.id === 'DET') {
+                            angleDeg = [180, 135][idx];
+                        } else if (node.id === 'NOT') {
+                            angleDeg = [90, 180, 0][idx];
+                        } else if (node.id === 'PER') {
+                            angleDeg = [-90, -135, -45, 0][idx];
+                        } else if (node.id === 'SEC') {
+                            angleDeg = [90, 45, 120][idx];
+                        } else if (node.id === 'DOC') {
+                            angleDeg = [0, -45, -90, 45, 90][idx];
+                        } else {
+                            angleDeg = idx * (360 / count) + 45;
+                        }
+                        const angleRad = angleDeg * (Math.PI / 180);
+                        const radius = 130;
+                        attr.relX = Math.round(Math.cos(angleRad) * radius);
+                        attr.relY = Math.round(Math.sin(angleRad) * radius);
+                    }
+                });
+            });
+        }
+        initializeAttributeOffsets();
+
+        // Dom Elements
+        const container = document.getElementById('canvas-container');
+        const canvas = document.getElementById('canvas');
+        const nodesLayer = document.getElementById('nodes-layer');
+        const svg = document.getElementById('connections-svg');
+        const themeToggle = document.getElementById('btn-theme-toggle');
+        const attributesToggle = document.getElementById('btn-toggle-attributes');
+
+        // Initialize Theme
+        document.body.setAttribute('data-theme', activeTheme);
+        updateThemeIcon();
+
+        if (showAttributes) attributesToggle.classList.add('active');
+
+        // Theme Toggle Handler
+        themeToggle.addEventListener('click', () => {
+            activeTheme = activeTheme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', activeTheme);
+            localStorage.setItem('er_theme', activeTheme);
+            updateThemeIcon();
+            drawConnections();
+        });
+
+        function updateThemeIcon() {
+            themeToggle.innerHTML = activeTheme === 'dark' ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+            lucide.createIcons();
+        }
+
+        // Toggle Attributes Handler
+        attributesToggle.addEventListener('click', () => {
+            showAttributes = !showAttributes;
+            if (showAttributes) {
+                attributesToggle.classList.add('active');
+            } else {
+                attributesToggle.classList.remove('active');
+            }
+            renderNodes();
+            drawConnections();
+        });
+
+        // Render Nodes (Entities, Relationships, and Attributes)
+        function renderNodes() {
+            nodesLayer.innerHTML = '';
+            
+            Object.values(nodes).forEach(node => {
+                // 1. Render main node
+                const el = document.createElement('div');
+                el.id = `node-${node.id}`;
+                el.className = `node ${node.type}-node`;
+                el.style.left = `${node.x}px`;
+                el.style.top = `${node.y}px`;
+
+                if (node.type === 'entity') {
+                    el.innerHTML = `<div class="entity-label">${node.label}</div>`;
+                } else {
+                    el.innerHTML = `<div class="relationship-inner">${node.label}</div>`;
+                }
+
+                // Dragging Logic
+                el.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+
+                    let startX = e.clientX;
+                    let startY = e.clientY;
+                    let initialX = node.x;
+                    let initialY = node.y;
+
+                    function onMouseMove(e) {
+                        const dx = (e.clientX - startX) / zoom;
+                        const dy = (e.clientY - startY) / zoom;
+                        node.x = Math.max(0, Math.min(3800, initialX + dx));
+                        node.y = Math.max(0, Math.min(3800, initialY + dy));
+                        el.style.left = `${node.x}px`;
+                        el.style.top = `${node.y}px`;
+                        
+                        // Redraw connections and move attributes on drag
+                        drawConnections();
+                        if (showAttributes && node.type === 'entity') {
+                            updateAttributePositions(node);
+                        }
+                    }
+
+                    function onMouseUp() {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        localStorage.setItem('er_nodes_pos_v4', JSON.stringify(nodes));
+                    }
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+                });
+
+                nodesLayer.appendChild(el);
+
+                // 2. Render Attributes around Entity if enabled
+                if (showAttributes && node.type === 'entity') {
+                    renderEntityAttributes(node);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // Helper to render attribute ovals
+        function renderEntityAttributes(node) {
+            const center = getNodeCenter(node);
+
+            node.attributes.forEach((attr, idx) => {
+                const attrX = center.x + attr.relX - 50; // W=100 (50 half)
+                const attrY = center.y + attr.relY - 21; // H=42 (21 half)
+
+                const attrEl = document.createElement('div');
+                attrEl.id = `attr-${node.id}-${idx}`;
+                attrEl.className = `attribute-oval ${attr.key === 'PK' ? 'pk' : ''}`;
+                attrEl.style.left = `${attrX}px`;
+                attrEl.style.top = `${attrY}px`;
+                attrEl.innerHTML = `<span class="attribute-oval-text">${attr.name}</span>`;
+
+                // Enable independent dragging of attribute ovals
+                attrEl.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+
+                    let startX = e.clientX;
+                    let startY = e.clientY;
+                    let initialRelX = attr.relX;
+                    let initialRelY = attr.relY;
+
+                    function onMouseMove(e) {
+                        const dx = (e.clientX - startX) / zoom;
+                        const dy = (e.clientY - startY) / zoom;
+                        attr.relX = Math.round(initialRelX + dx);
+                        attr.relY = Math.round(initialRelY + dy);
+                        
+                        const c = getNodeCenter(node);
+                        attrEl.style.left = `${c.x + attr.relX - 50}px`;
+                        attrEl.style.top = `${c.y + attr.relY - 21}px`;
+                        
+                        drawConnections();
+                    }
+
+                    function onMouseUp() {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        localStorage.setItem('er_nodes_pos_v4', JSON.stringify(nodes));
+                    }
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+
+                attrEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+                });
+
+                nodesLayer.appendChild(attrEl);
+            });
+        }
+
+        // Update attribute positions on drag
+        function updateAttributePositions(node) {
+            const center = getNodeCenter(node);
+
+            node.attributes.forEach((attr, idx) => {
+                const attrX = center.x + attr.relX - 50;
+                const attrY = center.y + attr.relY - 21;
+
+                const attrEl = document.getElementById(`attr-${node.id}-${idx}`);
+                if (attrEl) {
+                    attrEl.style.left = `${attrX}px`;
+                    attrEl.style.top = `${attrY}px`;
+                }
+            });
+        }
+
+        // Calculate intersection point on node borders
+        function getIntersectionPoint(fromNode, toNode) {
+            const fromCenter = getNodeCenter(fromNode);
+            const toCenter = getNodeCenter(toNode);
+
+            const dx = toCenter.x - fromCenter.x;
+            const dy = toCenter.y - fromCenter.y;
+
+            if (dx === 0 && dy === 0) return fromCenter;
+
+            if (fromNode.type === 'entity') {
+                const width = 160; // W=160 in Chen style
+                const height = 60; // H=60 in Chen style
+                
+                const hx = width / 2;
+                const hy = height / 2;
+
+                if (dx === 0) {
+                    return { x: fromCenter.x, y: fromCenter.y + (dy > 0 ? hy : -hy) };
+                }
+                if (dy === 0) {
+                    return { x: fromCenter.x + (dx > 0 ? hx : -hx), y: fromCenter.y };
+                }
+
+                const m = dy / dx;
+
+                // Check if line intersects left/right vs top/bottom
+                if (Math.abs(dy) <= Math.abs(dx) * (hy / hx)) {
+                    const x = dx > 0 ? hx : -hx;
+                    return { x: fromCenter.x + x, y: fromCenter.y + x * m };
+                } else {
+                    const y = dy > 0 ? hy : -hy;
+                    return { x: fromCenter.x + y / m, y: fromCenter.y + y };
+                }
+            } else {
+                // Relationship is a diamond, approximate with a circle radius of 45
+                const r = 45;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                return {
+                    x: fromCenter.x + (dx / dist) * r,
+                    y: fromCenter.y + (dy / dist) * r
+                };
+            }
+        }
+
+        // Draw Connections
+        function drawConnections() {
+            // Clear existing lines & labels
+            const lines = svg.querySelectorAll('.connection-line, .attribute-line');
+            lines.forEach(l => l.remove());
+            const labels = container.querySelectorAll('.cardinality-label');
+            labels.forEach(l => l.remove());
+
+            // 1. Draw Attribute Connection Lines (Dashed Lines)
+            if (showAttributes) {
+                Object.values(nodes).forEach(node => {
+                    if (node.type !== 'entity') return;
+                    const entityCenter = getNodeCenter(node);
+
+                    node.attributes.forEach((attr) => {
+                        const attrX = entityCenter.x + attr.relX;
+                        const attrY = entityCenter.y + attr.relY;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', entityCenter.x);
+                        line.setAttribute('y1', entityCenter.y);
+                        line.setAttribute('x2', attrX);
+                        line.setAttribute('y2', attrY);
+                        line.setAttribute('class', 'attribute-line');
+                        svg.appendChild(line);
+                    });
+                });
+            }
+
+            // 2. Draw Entity-Relationship Connections
+            const pairsCount = {};
+            connections.forEach(conn => {
+                const sortedPair = [conn.from, conn.to].sort().join('-');
+                pairsCount[sortedPair] = (pairsCount[sortedPair] || 0) + 1;
+            });
+
+            const pairsIndex = {};
+
+            connections.forEach((conn, index) => {
+                const fromNode = nodes[conn.from];
+                const toNode = nodes[conn.to];
+                if (!fromNode || !toNode) return;
+
+                // Calculate exact border intersection points
+                const p1 = getIntersectionPoint(fromNode, toNode);
+                const p2 = getIntersectionPoint(toNode, fromNode);
+
+                const sortedPair = [conn.from, conn.to].sort().join('-');
+                const totalForPair = pairsCount[sortedPair];
+                const pairIdx = pairsIndex[sortedPair] || 0;
+                pairsIndex[sortedPair] = pairIdx + 1;
+
+                let pathD = '';
+                let labelPos = { x: 0, y: 0 };
+                
+                // Position label close to the entity (t=0.22 from entity side)
+                const t = fromNode.type === 'entity' ? 0.22 : 0.78;
+
+                if (totalForPair === 1) {
+                    // Straight line
+                    pathD = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+                    labelPos.x = p1.x + (p2.x - p1.x) * t;
+                    labelPos.y = p1.y + (p2.y - p1.y) * t;
+                } else {
+                    // Curved line (for double connections / self loops)
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    
+                    const mx = (p1.x + p2.x) / 2;
+                    const my = (p1.y + p2.y) / 2;
+                    
+                    const px = -dy / dist;
+                    const py = dx / dist;
+                    
+                    const curveOffset = (pairIdx === 0 ? -40 : 40);
+                    const cx = mx + px * curveOffset;
+                    const cy = my + py * curveOffset;
+
+                    pathD = `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`;
+
+                    const mt = 1 - t;
+                    labelPos.x = mt*mt*p1.x + 2*mt*t*cx + t*t*p2.x;
+                    labelPos.y = mt*mt*p1.y + 2*mt*t*cy + t*t*p2.y;
+                }
+
+                // Create SVG Path
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathD);
+                path.setAttribute('class', 'connection-line');
+                
+                // Highlight active connections
+                if (selectedNodeId === conn.from || selectedNodeId === conn.to) {
+                    const isRel = nodes[selectedNodeId].type === 'relationship';
+                    path.classList.add(isRel ? 'rel-active' : 'active');
+                }
+
+                svg.appendChild(path);
+
+                // Add Cardinality Label (guaranteed to be outside the entity card)
+                const label = document.createElement('div');
+                label.className = 'cardinality-label';
+                label.textContent = conn.card;
+                label.style.left = `${labelPos.x}px`;
+                label.style.top = `${labelPos.y}px`;
+                canvas.appendChild(label);
+            });
+        }
+
+        function getNodeCenter(node) {
+            if (node.type === 'entity') {
+                const el = document.getElementById(`node-${node.id}`);
+                const height = el ? el.offsetHeight : (45 + node.attributes.length * 20);
+                return {
+                    x: node.x + 80, // W=160
+                    y: node.y + (height / 2)
+                };
+            } else {
+                return {
+                    x: node.x + 45, // W=90
+                    y: node.y + 45  // H=90
+                };
+            }
+        }
+
+        // Selection Logic
+        function selectNode(id) {
+            selectedNodeId = id;
+            
+            document.querySelectorAll('.node').forEach(el => el.classList.remove('selected'));
+            const activeEl = document.getElementById(`node-${id}`);
+            if (activeEl) activeEl.classList.add('selected');
+
+            drawConnections();
+            updateSidebar(id);
+        }
+
+        // Sidebar Updating
+        const detailSection = document.getElementById('detail-section');
+        
+        function updateSidebar(id) {
+            const node = nodes[id];
+            if (!node) return;
+
+            let html = '';
+            if (node.type === 'entity') {
+                const sql = generateTableSQL(node);
+                html = `
+                    <div class="section-title">Detalle de Entidad</div>
+                    <div class="detail-card">
+                        <div class="detail-header entity">
+                            <i data-lucide="database"></i>
+                            <span>${node.label}</span>
+                        </div>
+                        <div class="detail-desc" style="margin-bottom:16px;">
+                            ${node.desc}
+                        </div>
+                        
+                        <div class="section-title" style="margin-top:16px; margin-bottom:8px;">Atributos Conceptuales</div>
+                        <div class="attributes-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px; font-size:0.8rem;">
+                            ${node.attributes.map(a => `
+                                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid var(--border-color)">
+                                    <span style="${a.key === 'PK' ? 'text-decoration:underline; font-weight:600;' : ''}">${a.name}</span>
+                                    ${a.key ? `<span class="attribute-key pk" style="font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; color: var(--accent-relationship); background: rgba(245, 158, 11, 0.15);">${a.key}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="section-title" style="margin-bottom:8px;">SQL DDL (Generado con FKs)</div>
+                        <div class="sql-container">
+                            <code class="sql-code">${highlightSQL(sql)}</code>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Relationship
+                const linked = connections.filter(c => c.to === id || c.from === id);
+                const entities = linked.map(l => l.from === id ? l.to : l.from);
+                const entityLabels = entities.map(e => nodes[e]?.label || e);
+
+                html = `
+                    <div class="section-title">Detalle de Relación</div>
+                    <div class="detail-card">
+                        <div class="detail-header relationship">
+                            <i data-lucide="git-commit"></i>
+                            <span>${node.label}</span>
+                        </div>
+                        <div class="detail-desc" style="margin-bottom:16px;">
+                            ${node.desc}
+                        </div>
+                        <div class="section-title" style="margin-bottom:8px;">Entidades Vinculadas</div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            ${entityLabels.map(lbl => `
+                                <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; background:rgba(255,255,255,0.02); padding:8px 12px; border-radius:6px; border:1px solid var(--border-color);">
+                                    <i data-lucide="database" style="color:var(--accent-entity); width:16px; height:16px;"></i>
+                                    <span>${lbl}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            detailSection.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Smart SQL DDL Generator (Automatically infers FKs from 1-to-N relationships)
+        function generateTableSQL(node) {
+            let sql = `CREATE TABLE ${node.label.toLowerCase()} (\n`;
+            const cols = [];
+            const fks = [];
+
+            // Add local attributes
+            node.attributes.forEach(attr => {
+                let line = `    ${attr.name} ${attr.type || 'INT'}`;
+                if (attr.key === 'PK') {
+                    line += ' PRIMARY KEY';
+                } else {
+                    line += ' NOT NULL';
+                }
+                cols.push(line);
+            });
+
+            // Find all relationships where this node is the 'N' side (gets the FK)
+            connections.forEach(conn => {
+                if (conn.from === node.id && conn.card === 'N') {
+                    // Find the '1' side of the same relationship
+                    const relId = conn.to;
+                    const otherConn = connections.find(c => c.to === relId && c.from !== node.id && c.card === '1');
+                    if (otherConn) {
+                        const parentNode = nodes[otherConn.from];
+                        if (parentNode) {
+                            const pkAttr = parentNode.attributes.find(a => a.key === 'PK');
+                            if (pkAttr) {
+                                // Specific name for self-referential FK, otherwise parent_pk_name
+                                const fkName = parentNode.id === node.id ? `${pkAttr.name}_prerrequisito` : pkAttr.name;
+                                cols.push(`    ${fkName} INT NOT NULL`);
+                                fks.push(`    FOREIGN KEY (${fkName}) REFERENCES ${parentNode.label.toLowerCase()}(${pkAttr.name})`);
+                            }
+                        }
+                    }
+                }
+            });
+
+            sql += cols.concat(fks).join(',\n');
+            sql += '\n);';
+            return sql;
+        }
+
+        function generateFullSQL() {
+            const order = ['FAC', 'ESP', 'PLAN', 'CUR', 'DOC', 'PER', 'EST', 'MAT', 'SEC', 'DET', 'NOT'];
+            let sql = `-- =========================================================\n`;
+            sql += `-- SCRIPT DDL GENERADO DESDE EL MODELO CONCEPTUAL CHEN\n`;
+            sql += `-- (Las llaves foráneas se infieren de las cardinalidades)\n`;
+            sql += `-- =========================================================\n\n`;
+
+            order.forEach(id => {
+                const node = nodes[id];
+                if (node) {
+                    sql += `-- Tabla: ${node.label}\n`;
+                    sql += generateTableSQL(node) + '\n\n';
+                }
+            });
+
+            return sql;
+        }
+
+        function highlightSQL(sql) {
+            return sql
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\b(CREATE TABLE|PRIMARY KEY|FOREIGN KEY|REFERENCES|INT|VARCHAR|DATE|BOOLEAN|DECIMAL|TIMESTAMP|NOT NULL)\b/g, '<span class="sql-keyword">$1</span>')
+                .replace(/(--.*)/g, '<span class="sql-comment">$1</span>');
+        }
+
+        // Zoom & Pan Engine
+        function updateTransform() {
+            canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+        }
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const canvasX = (mouseX - panX) / zoom;
+            const canvasY = (mouseY - panY) / zoom;
+
+            const zoomFactor = 1.1;
+            if (e.deltaY < 0) {
+                zoom = Math.min(2.5, zoom * zoomFactor);
+            } else {
+                zoom = Math.max(0.2, zoom / zoomFactor);
+            }
+
+            panX = mouseX - canvasX * zoom;
+            panY = mouseY - canvasY * zoom;
+            updateTransform();
+        });
+
+        let isPanning = false;
+        let startPanX, startPanY;
+
+        container.addEventListener('mousedown', (e) => {
+            if (e.target !== container && e.target !== canvas && e.target.id !== 'connections-svg') return;
+            isPanning = true;
+            startPanX = e.clientX - panX;
+            startPanY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = e.clientX - startPanX;
+            panY = e.clientY - startPanY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+        });
+
+        // Control Panel Listeners
+        document.getElementById('btn-zoom-in').addEventListener('click', () => {
+            zoom = Math.min(2.5, zoom * 1.2);
+            updateTransform();
+        });
+
+        document.getElementById('btn-zoom-out').addEventListener('click', () => {
+            zoom = Math.max(0.2, zoom / 1.2);
+            updateTransform();
+        });
+
+        document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+            zoom = 0.8;
+            panX = 60;
+            panY = 20;
+            updateTransform();
+        });
+
+        document.getElementById('btn-auto-layout').addEventListener('click', () => {
+            if (confirm('¿Deseas restablecer la distribución original del diagrama?')) {
+                nodes = JSON.parse(JSON.stringify(initialNodes));
+                localStorage.removeItem('er_nodes_pos_v4');
+                renderNodes();
+                drawConnections();
+                if (selectedNodeId) selectNode(selectedNodeId);
+            }
+        });
+
+        // Modal Logic
+        const modal = document.getElementById('modal-sql');
+        const fullSqlCode = document.getElementById('full-sql-code');
+
+        document.getElementById('btn-export-sql').addEventListener('click', () => {
+            const sql = generateFullSQL();
+            fullSqlCode.innerHTML = highlightSQL(sql);
+            modal.style.display = 'flex';
+        });
+
+        // Export HTML with Current Layout embedded
+        document.getElementById('btn-export-html').addEventListener('click', () => {
+            // Reconstruct the file content using the live DOM outerHTML
+            let htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+            
+            // Clean up temporary elements and classes from the serialized HTML
+            // Replace the initialNodes block with the current state of nodes
+            const serializedNodes = JSON.stringify(nodes, null, 4);
+            const regex = /const initialNodes = \{[\s\S]*?\};/;
+            htmlContent = htmlContent.replace(regex, `const initialNodes = ${serializedNodes};`);
+            
+            // Embed current theme
+            const themeRegex = /let activeTheme = localStorage\.getItem\('er_theme'\) \|\| 'dark';/;
+            htmlContent = htmlContent.replace(themeRegex, `let activeTheme = '${activeTheme}';`);
+
+            // Trigger local browser download (works offline and on file://)
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'modelo_conceptual_disenado.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('btn-close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-copy-sql').addEventListener('click', () => {
+            const sql = generateFullSQL();
+            navigator.clipboard.writeText(sql).then(() => {
+                const btn = document.getElementById('btn-copy-sql');
+                btn.innerHTML = '<i data-lucide="check"></i> ¡Copiado!';
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = '<i data-lucide="copy"></i> Copiar Código';
+                    lucide.createIcons();
+                }, 2000);
+            });
+        });
+
+        // Initial setup
+        renderNodes();
+        drawConnections();
+        updateTransform();
+
+        // Close details panel when clicking empty canvas
+        container.addEventListener('click', (e) => {
+            if (e.target === container || e.target === canvas || e.target.id === 'connections-svg') {
+                selectedNodeId = null;
+                document.querySelectorAll('.node').forEach(el => el.classList.remove('selected'));
+                drawConnections();
+                detailSection.innerHTML = `
+                    <div class="section-title">Selección</div>
+                    <div class="detail-card">
+                        <div class="detail-desc">
+                            Haz clic en cualquier entidad, relación o atributo para inspeccionar sus características y ver su descripción detallada.
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+    </script>
+
+
+</body></html>

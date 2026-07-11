@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.models import db, User, AuditLog
+from app.utils import is_password_secure
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -132,6 +133,10 @@ def change_password():
         
     if not user.check_password(current_password):
         return jsonify({'error': 'La contraseña actual es incorrecta'}), 400
+        
+    is_secure, error_msg = is_password_secure(new_password)
+    if not is_secure:
+        return jsonify({'error': error_msg}), 400
         
     user.set_password(new_password)
     

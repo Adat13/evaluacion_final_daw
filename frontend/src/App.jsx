@@ -59,6 +59,28 @@ function App() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsFilter, setLogsFilter] = useState('');
 
+  // Academic Modules State (Estudiante)
+  const [cursosDisponibles, setCursosDisponibles] = useState([]);
+  const [seccionSeleccionadas, setSeccionSeleccionadas] = useState([]);
+  const [codigoPago, setCodigoPago] = useState('');
+  const [matriculaActual, setMatriculaActual] = useState(null);
+  const [notasEstudiante, setNotasEstudiante] = useState(null);
+  const [documentosList, setDocumentosList] = useState([]);
+  const [tipoDocSelect, setTipoDocSelect] = useState('constancia_matricula');
+  
+  // Academic Modules State (Docente)
+  const [seccionesDocente, setSeccionesDocente] = useState([]);
+  const [seccionSeleccionada, setSeccionSeleccionada] = useState(null);
+  const [notasSeccion, setNotasSeccion] = useState([]);
+  const [notasEditState, setNotasEditState] = useState({});
+
+  // Academic Modules State (Dirección / Admin)
+  const [supervisionData, setSupervisionData] = useState(null);
+  const [indicadoresData, setIndicadoresData] = useState(null);
+  const [actasList, setActasList] = useState([]);
+  const [actaSeleccionada, setActaSeleccionada] = useState(null);
+  const [obsActa, setObsActa] = useState('');
+
   // Notifications State (Simulated)
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
@@ -81,6 +103,21 @@ function App() {
         fetchUsers();
       } else if (activeTab === 'audit_logs' && (user?.role === 'administrador' || user?.role === 'direccion')) {
         fetchAuditLogs();
+      } else if (activeTab === 'matricula_estudiante' && user?.role === 'estudiante') {
+        fetchCursosDisponibles();
+        fetchMatriculaActual();
+      } else if (activeTab === 'notas_estudiante' && user?.role === 'estudiante') {
+        fetchNotasEstudiante();
+      } else if (activeTab === 'certificados_estudiante' && user?.role === 'estudiante') {
+        fetchDocumentosEstudiante();
+      } else if (activeTab === 'cursos_docente' && user?.role === 'docente') {
+        fetchSeccionesDocente();
+      } else if (activeTab === 'supervision_direccion' && (user?.role === 'direccion' || user?.role === 'administrador')) {
+        fetchSupervisionDireccion();
+      } else if (activeTab === 'indicadores_direccion' && (user?.role === 'direccion' || user?.role === 'administrador')) {
+        fetchIndicadoresDireccion();
+      } else if (activeTab === 'actas_direccion' && (user?.role === 'direccion' || user?.role === 'administrador')) {
+        fetchActas();
       }
     }
   }, [activeTab, token, user]);
@@ -383,6 +420,294 @@ function App() {
     setNotifications(notifications.map(n => ({ ...n, unread: false })));
   };
 
+  // --- Estudiante APIs ---
+  const fetchCursosDisponibles = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/cursos-disponibles`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setCursosDisponibles(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchMatriculaActual = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/matricula-actual`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setMatriculaActual(data);
+      else setMatriculaActual(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchNotasEstudiante = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/notas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setNotasEstudiante(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchDocumentosEstudiante = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/documentos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setDocumentosList(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSolicitarMatricula = async (e) => {
+    e.preventDefault();
+    if (seccionSeleccionadas.length === 0) {
+      alert('Seleccione al menos un curso.');
+      return;
+    }
+    if (!codigoPago) {
+      alert('Ingrese su comprobante de pago.');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/matricula`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          seccion_ids: seccionSeleccionadas,
+          comprobante_pago: codigoPago,
+          costo_total: 120.00
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Error al procesar la matrícula');
+      alert('¡Matrícula solicitada con éxito!');
+      setSeccionSeleccionadas([]);
+      setCodigoPago('');
+      fetchMatriculaActual();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSolicitarDocumento = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_BASE_URL}/estudiante/documentos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tipo_documento: tipoDocSelect })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      alert('Documento solicitado correctamente.');
+      fetchDocumentosEstudiante();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // --- Docente APIs ---
+  const fetchSeccionesDocente = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setSeccionesDocente(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchDetalleSeccion = async (sid) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos/${sid}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSeccionSeleccionada(data);
+        fetchNotasSeccion(sid);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchNotasSeccion = async (sid) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos/${sid}/notas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setNotasSeccion(data);
+        const initialEdit = {};
+        data.forEach(n => {
+          initialEdit[n.detalle_matricula_id] = {
+            nota_parcial1: n.nota.nota_parcial1,
+            nota_parcial2: n.nota.nota_parcial2,
+            evaluacion_continua: n.nota.evaluacion_continua,
+            examen_final: n.nota.examen_final
+          };
+        });
+        setNotasEditState(initialEdit);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateNota = async (sid, dmid) => {
+    const grades = notasEditState[dmid];
+    const p1 = parseFloat(grades?.nota_parcial1 || 0);
+    const p2 = parseFloat(grades?.nota_parcial2 || 0);
+    const ec = parseFloat(grades?.evaluacion_continua || 0);
+    const ef = parseFloat(grades?.examen_final || 0);
+
+    if (p1 < 0 || p1 > 20 || p2 < 0 || p2 > 20 || ec < 0 || ec > 20 || ef < 0 || ef > 20) {
+      alert('Todas las calificaciones deben estar comprendidas en el rango de 0 a 20.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos/${sid}/notas`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          detalle_matricula_id: dmid,
+          nota_parcial1: p1,
+          nota_parcial2: p2,
+          evaluacion_continua: ec,
+          examen_final: ef
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      alert('Calificación guardada.');
+      fetchNotasSeccion(sid);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleEnviarActa = async (sid) => {
+    if (!window.confirm('¿Está seguro de enviar el acta? Ya no podrá realizar cambios hasta que sea revisada.')) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos/${sid}/notas/enviar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      alert('Acta enviada con éxito.');
+      fetchDetalleSeccion(sid);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleUploadSilabo = async (sid, file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await fetch(`${API_BASE_URL}/docente/cursos/${sid}/silabo`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      alert('Sílabo cargado con éxito.');
+      fetchDetalleSeccion(sid);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // --- Dirección / Admin APIs ---
+  const fetchSupervisionDireccion = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/direccion/cursos/supervision`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setSupervisionData(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchIndicadoresDireccion = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/direccion/notas/indicadores`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setIndicadoresData(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchActas = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/direccion/actas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) setActasList(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCambiarEstadoActa = async (aid, nuevoEstado) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/direccion/actas/${aid}/estado`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          estado: nuevoEstado,
+          observaciones: nuevoEstado === 'OBSERVADA' ? obsActa : ''
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      alert(`Acta cambiada a ${nuevoEstado} con éxito.`);
+      setActaSeleccionada(null);
+      setObsActa('');
+      fetchActas();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   // If NOT logged in, show login page
   if (!token) {
     return (
@@ -626,6 +951,11 @@ function App() {
                       <i className="fa-solid fa-users-gear"></i> Control de Usuarios
                     </a>
                   </li>
+                  <li className={`sidebar-item ${activeTab === 'actas_direccion' ? 'active' : ''}`}>
+                    <a href="#actas" onClick={() => setActiveTab('actas_direccion')}>
+                      <i className="fa-solid fa-file-signature"></i> Validar Actas
+                    </a>
+                  </li>
                   <li className={`sidebar-item ${activeTab === 'audit_logs' ? 'active' : ''}`}>
                     <a href="#logs" onClick={() => setActiveTab('audit_logs')}>
                       <i className="fa-solid fa-shield-halved"></i> Bitácora de Auditoría
@@ -635,23 +965,45 @@ function App() {
               )}
 
               {user?.role === 'direccion' && (
-                <li className={`sidebar-item ${activeTab === 'audit_logs' ? 'active' : ''}`}>
-                  <a href="#logs" onClick={() => setActiveTab('audit_logs')}>
-                    <i className="fa-solid fa-shield-halved"></i> Bitácora de Auditoría
-                  </a>
-                </li>
+                <>
+                  <li className={`sidebar-item ${activeTab === 'supervision_direccion' ? 'active' : ''}`}>
+                    <a href="#supervision" onClick={() => setActiveTab('supervision_direccion')}>
+                      <i className="fa-solid fa-chart-pie"></i> Supervisión de Cursos
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'indicadores_direccion' ? 'active' : ''}`}>
+                    <a href="#indicadores" onClick={() => setActiveTab('indicadores_direccion')}>
+                      <i className="fa-solid fa-chart-line"></i> Indicadores de Notas
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'actas_direccion' ? 'active' : ''}`}>
+                    <a href="#actas" onClick={() => setActiveTab('actas_direccion')}>
+                      <i className="fa-solid fa-file-signature"></i> Validar Actas
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'audit_logs' ? 'active' : ''}`}>
+                    <a href="#logs" onClick={() => setActiveTab('audit_logs')}>
+                      <i className="fa-solid fa-shield-halved"></i> Bitácora de Auditoría
+                    </a>
+                  </li>
+                </>
               )}
 
               {user?.role === 'estudiante' && (
                 <>
-                  <li className="sidebar-item">
-                    <a href="#matricula" onClick={() => alert('Módulo de Matrícula - Asignado a Benjamin (en desarrollo)')}>
+                  <li className={`sidebar-item ${activeTab === 'matricula_estudiante' ? 'active' : ''}`}>
+                    <a href="#matricula" onClick={() => setActiveTab('matricula_estudiante')}>
                       <i className="fa-solid fa-file-signature"></i> Matrícula en Línea
                     </a>
                   </li>
-                  <li className="sidebar-item">
-                    <a href="#notas" onClick={() => alert('Módulo de Notas - Asignado a Rojas (en desarrollo)')}>
+                  <li className={`sidebar-item ${activeTab === 'notas_estudiante' ? 'active' : ''}`}>
+                    <a href="#notas" onClick={() => setActiveTab('notas_estudiante')}>
                       <i className="fa-solid fa-file-invoice"></i> Consultar Notas
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'certificados_estudiante' ? 'active' : ''}`}>
+                    <a href="#certificados" onClick={() => setActiveTab('certificados_estudiante')}>
+                      <i className="fa-solid fa-file-pdf"></i> Trámites y Certificados
                     </a>
                   </li>
                 </>
@@ -659,14 +1011,9 @@ function App() {
 
               {user?.role === 'docente' && (
                 <>
-                  <li className="sidebar-item">
-                    <a href="#cursos" onClick={() => alert('Módulo de Cursos y Docentes - Asignado a Rojas (en desarrollo)')}>
-                      <i className="fa-solid fa-book-open"></i> Mis Secciones
-                    </a>
-                  </li>
-                  <li className="sidebar-item">
-                    <a href="#calificar" onClick={() => alert('Módulo de Notas - Asignado a Rojas (en desarrollo)')}>
-                      <i className="fa-solid fa-pen-to-square"></i> Registrar Notas
+                  <li className={`sidebar-item ${activeTab === 'cursos_docente' ? 'active' : ''}`}>
+                    <a href="#cursos" onClick={() => setActiveTab('cursos_docente')}>
+                      <i className="fa-solid fa-book-open"></i> Mis Cursos
                     </a>
                   </li>
                 </>
@@ -1057,6 +1404,814 @@ function App() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 5. MATRICULA ESTUDIANTE VIEW */}
+          {activeTab === 'matricula_estudiante' && user?.role === 'estudiante' && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.8rem' }}>Matrícula en Línea</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Selecciona tus cursos y registra tu matrícula para el periodo actual.</p>
+              </div>
+
+              {matriculaActual ? (
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-file-invoice"></i> Estado de Matrícula Actual</h3>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    <p>Periodo Académico: <strong>{matriculaActual.periodo}</strong></p>
+                    <p>Fecha de Registro: <strong>{new Date(matriculaActual.fecha_matricula).toLocaleString('es-PE')}</strong></p>
+                    <p>Comprobante de Pago: <strong>{matriculaActual.comprobante_pago}</strong></p>
+                    <p>Estado de Matrícula: <strong style={{ color: 'var(--success)' }}>{matriculaActual.estado_matricula.toUpperCase()}</strong></p>
+                    <p>Estado de Pago: <strong style={{ color: 'var(--success)' }}>{matriculaActual.estado_pago.toUpperCase()}</strong></p>
+                    <p style={{ marginTop: '15px' }}><strong>Cursos Registrados:</strong></p>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                          <th style={{ padding: '8px' }}>Código</th>
+                          <th style={{ padding: '8px' }}>Curso</th>
+                          <th style={{ padding: '8px' }}>Créditos</th>
+                          <th style={{ padding: '8px' }}>Sección</th>
+                          <th style={{ padding: '8px' }}>Docente</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matriculaActual.cursos.map((c, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '8px' }}>{c.codigo_curso}</td>
+                            <td style={{ padding: '8px' }}>{c.nombre_curso}</td>
+                            <td style={{ padding: '8px' }}>{c.creditos}</td>
+                            <td style={{ padding: '8px' }}>{c.seccion}</td>
+                            <td style={{ padding: '8px' }}>{c.docente}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSolicitarMatricula} className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-list-check"></i> Cursos Disponibles para Matrícula</h3>
+                  </div>
+                  
+                  <div style={{ maxHeight: '350px', overflowY: 'auto', marginBottom: '20px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                          <th style={{ padding: '10px' }}>Seleccionar</th>
+                          <th style={{ padding: '10px' }}>Código</th>
+                          <th style={{ padding: '10px' }}>Curso</th>
+                          <th style={{ padding: '10px' }}>Créditos</th>
+                          <th style={{ padding: '10px' }}>Sección</th>
+                          <th style={{ padding: '10px' }}>Horario</th>
+                          <th style={{ padding: '10px' }}>Docente</th>
+                          <th style={{ padding: '10px' }}>Cupos</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cursosDisponibles.map((c) => (
+                          <tr key={c.seccion_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '10px' }}>
+                              <input
+                                type="checkbox"
+                                value={c.seccion_id}
+                                disabled={c.cupos_disponibles === 0}
+                                checked={seccionSeleccionadas.includes(c.seccion_id)}
+                                onChange={(e) => {
+                                  const id = parseInt(e.target.value);
+                                  if (e.target.checked) setSeccionSeleccionadas([...seccionSeleccionadas, id]);
+                                  else setSeccionSeleccionadas(seccionSeleccionadas.filter(x => x !== id));
+                                }}
+                              />
+                            </td>
+                            <td style={{ padding: '10px', fontWeight: 600 }}>{c.curso.codigo_curso}</td>
+                            <td style={{ padding: '10px' }}>{c.curso.nombre}</td>
+                            <td style={{ padding: '10px' }}>{c.curso.creditos}</td>
+                            <td style={{ padding: '10px' }}>{c.codigo_seccion}</td>
+                            <td style={{ padding: '10px' }}>{c.horario}</td>
+                            <td style={{ padding: '10px' }}>{c.docente}</td>
+                            <td style={{ padding: '10px' }}>{c.cupos_disponibles} / {c.capacidad}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 600 }}>Código de Operación / Comprobante *</label>
+                      <input
+                        type="text"
+                        value={codigoPago}
+                        onChange={(e) => setCodigoPago(e.target.value)}
+                        placeholder="Ej: OP-987482"
+                        required
+                        style={{ width: '100%', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 600 }}>Costo Total Matricula</label>
+                      <input type="text" readOnly value="S/. 120.00" style={{ width: '100%', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '4px', backgroundColor: '#f1f5f9' }} />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="btn" style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '12px 20px', marginTop: '20px', borderRadius: '4px' }}>
+                    Enviar Solicitud de Matrícula
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* 6. NOTAS ESTUDIANTE VIEW */}
+          {activeTab === 'notas_estudiante' && user?.role === 'estudiante' && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.8rem' }}>Mis Notas del Periodo</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Consulta de calificaciones del semestre académico actual.</p>
+              </div>
+
+              {notasEstudiante && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                    <div className="card" style={{ marginBottom: 0, padding: '15px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>CRÉDITOS MATRICULADOS</span>
+                      <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{notasEstudiante.resumen.total_creditos}</h3>
+                    </div>
+                    <div className="card" style={{ marginBottom: 0, padding: '15px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>CRÉDITOS APROBADOS</span>
+                      <h3 style={{ fontSize: '1.8rem', color: 'var(--success)' }}>{notasEstudiante.resumen.creditos_aprobados}</h3>
+                    </div>
+                    <div className="card" style={{ marginBottom: 0, padding: '15px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>PROMEDIO PONDERADO</span>
+                      <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{notasEstudiante.resumen.promedio_ponderado}</h3>
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div className="card-header">
+                      <h3 className="card-title"><i className="fa-solid fa-file-invoice"></i> Hoja de Calificaciones ({notasEstudiante.periodo_codigo})</h3>
+                    </div>
+                    
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                            <th style={{ padding: '10px' }}>Código</th>
+                            <th style={{ padding: '10px' }}>Curso</th>
+                            <th style={{ padding: '10px' }}>Créditos</th>
+                            <th style={{ padding: '10px' }}>Sección</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>PC1</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>PC2</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>EC</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>EF</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Promedio</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {notasEstudiante.notas.length === 0 ? (
+                            <tr>
+                              <td colSpan="10" style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                No se encontraron notas registradas para este periodo
+                              </td>
+                            </tr>
+                          ) : (
+                            notasEstudiante.notas.map((n, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <td style={{ padding: '10px', fontWeight: 600 }}>{n.codigo_curso}</td>
+                                <td style={{ padding: '10px' }}>{n.nombre_curso}</td>
+                                <td style={{ padding: '10px' }}>{n.creditos}</td>
+                                <td style={{ padding: '10px' }}>{n.seccion}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{n.nota.nota_parcial1 !== null ? n.nota.nota_parcial1 : '-'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{n.nota.nota_parcial2 !== null ? n.nota.nota_parcial2 : '-'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{n.nota.evaluacion_continua !== null ? n.nota.evaluacion_continua : '-'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>{n.nota.examen_final !== null ? n.nota.examen_final : '-'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center', fontWeight: 700 }}>{n.nota.promedio_final !== null ? n.nota.promedio_final : '-'}</td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>
+                                  <span style={{
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    backgroundColor: n.nota.estado === 'APROBADO' ? 'var(--success-light)' : n.nota.estado === 'DESAPROBADO' ? 'var(--danger-light)' : 'var(--warning-light)',
+                                    color: n.nota.estado === 'APROBADO' ? 'var(--success)' : n.nota.estado === 'DESAPROBADO' ? 'var(--danger)' : 'var(--warning)'
+                                  }}>
+                                    {n.nota.estado}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 7. CERTIFICADOS ESTUDIANTE VIEW */}
+          {activeTab === 'certificados_estudiante' && user?.role === 'estudiante' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="card-title"><i className="fa-solid fa-file-signature"></i> Solicitar Trámite / Certificado</h3>
+                </div>
+                <form onSubmit={handleSolicitarDocumento}>
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 600 }}>Tipo de Trámite</label>
+                    <select
+                      value={tipoDocSelect}
+                      onChange={(e) => setTipoDocSelect(e.target.value)}
+                      style={{ width: '100%', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                    >
+                      <option value="constancia_matricula">Constancia de Matrícula</option>
+                      <option value="certificado_estudios">Certificado Oficial de Estudios</option>
+                    </select>
+                  </div>
+                  
+                  <button type="submit" className="btn" style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '4px' }}>
+                    Enviar Solicitud
+                  </button>
+                </form>
+              </div>
+
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="card-title"><i className="fa-solid fa-file-pdf"></i> Mis Solicitudes y Constancias</h3>
+                </div>
+                <div style={{ overflowY: 'auto', maxHeight: '350px' }}>
+                  {documentosList.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>No has realizado solicitudes.</p>
+                  ) : (
+                    documentosList.map(doc => (
+                      <div key={doc.id} style={{ borderBottom: '1px solid var(--border-color)', padding: '10px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600 }}>
+                          <span>{doc.tipo_documento.replace('_', ' ').toUpperCase()}</span>
+                          <span style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            backgroundColor: doc.estado === 'emitido' ? 'var(--success-light)' : 'var(--warning-light)',
+                            color: doc.estado === 'emitido' ? 'var(--success)' : 'var(--warning)'
+                          }}>{doc.estado.toUpperCase()}</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          <span>Fecha: {new Date(doc.fecha_solicitud).toLocaleDateString()}</span>
+                        </div>
+                        {doc.estado === 'emitido' && (
+                          <div style={{ marginTop: '8px', padding: '8px', border: '1px dashed var(--border-color)', borderRadius: '4px', fontSize: '0.75rem', backgroundColor: 'var(--bg-body)' }}>
+                            <p style={{ fontFamily: 'monospace' }}>Verificación Firma: {doc.firma_digital_hash ? doc.firma_digital_hash.substring(0, 16) : 'N/A'}...</p>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>Código QR Hash: {doc.qr_code_hash}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 8. CURSOS DOCENTE VIEW */}
+          {activeTab === 'cursos_docente' && user?.role === 'docente' && (
+            <div>
+              {!seccionSeleccionada ? (
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-chalkboard-user"></i> Cursos Asignados en el Ciclo</h3>
+                  </div>
+                  
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                          <th style={{ padding: '10px' }}>Código</th>
+                          <th style={{ padding: '10px' }}>Curso</th>
+                          <th style={{ padding: '10px' }}>Créditos</th>
+                          <th style={{ padding: '10px' }}>Sección</th>
+                          <th style={{ padding: '10px' }}>Horario</th>
+                          <th style={{ padding: '10px' }}>Estudiantes</th>
+                          <th style={{ padding: '10px' }}>Estado Acta</th>
+                          <th style={{ padding: '10px', textAlign: 'center' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {seccionesDocente.map((s) => (
+                          <tr key={s.seccion_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '10px', fontWeight: 600 }}>{s.curso.codigo_curso}</td>
+                            <td style={{ padding: '10px' }}>{s.curso.nombre}</td>
+                            <td style={{ padding: '10px' }}>{s.curso.creditos}</td>
+                            <td style={{ padding: '10px' }}>{s.codigo_seccion}</td>
+                            <td style={{ padding: '10px' }}>{s.horario}</td>
+                            <td style={{ padding: '10px' }}>{s.cantidad_estudiantes} / {s.capacidad}</td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                backgroundColor: s.estado_acta === 'CONSOLIDADA' ? 'var(--success-light)' : s.estado_acta === 'ENVIADA' ? 'var(--warning-light)' : 'var(--danger-light)',
+                                color: s.estado_acta === 'CONSOLIDADA' ? 'var(--success)' : s.estado_acta === 'ENVIADA' ? 'var(--warning)' : 'var(--danger)'
+                              }}>
+                                {s.estado_acta}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'center' }}>
+                              <button onClick={() => fetchDetalleSeccion(s.seccion_id)} className="btn" style={{ padding: '4px 10px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.8rem' }}>
+                                <i className="fa-solid fa-gear"></i> Gestionar
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <button onClick={() => setSeccionSeleccionada(null)} className="btn" style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-main)', border: 'none', marginBottom: '15px' }}>
+                    <i className="fa-solid fa-arrow-left"></i> Volver a Cursos
+                  </button>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                    <div className="card" style={{ marginBottom: 0 }}>
+                      <div className="card-header">
+                        <h3 className="card-title"><i className="fa-solid fa-circle-info"></i> Detalle de la Sección</h3>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                        <p>Curso: <strong>{seccionSeleccionada.curso.nombre} ({seccionSeleccionada.curso.codigo_curso})</strong></p>
+                        <p>Sección: <strong>{seccionSeleccionada.codigo_seccion}</strong></p>
+                        <p>Horario: <strong>{seccionSeleccionada.horario}</strong></p>
+                        <p>Capacidad: <strong>{seccionSeleccionada.capacidad} estudiantes</strong></p>
+                        
+                        <div style={{ marginTop: '15px', padding: '10px', border: '1px dashed var(--border-color)', borderRadius: '4px' }}>
+                          <p><strong>Sílabo Oficial del Curso:</strong></p>
+                          {seccionSeleccionada.silabo_url ? (
+                            <p style={{ marginTop: '4px' }}><a href={seccionSeleccionada.silabo_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-light)', textDecoration: 'none' }}><i className="fa-solid fa-file-pdf"></i> Ver Sílabo Cargado</a></p>
+                          ) : (
+                            <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '4px' }}>Sílabo no registrado.</p>
+                          )}
+                          <div style={{ marginTop: '8px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Cargar/Actualizar Sílabo (PDF/Word):</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.docx,.doc"
+                              onChange={(e) => handleUploadSilabo(seccionSeleccionada.seccion_id, e.target.files[0])}
+                              style={{ marginTop: '5px', fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card" style={{ marginBottom: 0 }}>
+                      <div className="card-header">
+                        <h3 className="card-title"><i className="fa-solid fa-signature"></i> Control de Acta Académica</h3>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                        <p>Estado del Acta: <strong>{seccionSeleccionada.estado_acta}</strong></p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '10px' }}>
+                          Para enviar el acta oficial, debe guardar las calificaciones de todos los alumnos matriculados. Una vez enviada, el acta quedará bloqueada para revisión del Director y el Administrador.
+                        </p>
+                        <button
+                          onClick={() => handleEnviarActa(seccionSeleccionada.seccion_id)}
+                          disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                          className="btn"
+                          style={{ width: '100%', backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '10px', marginTop: '20px', borderRadius: '4px' }}
+                        >
+                          <i className="fa-solid fa-paper-plane"></i> Enviar Acta de Calificaciones
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div className="card-header">
+                      <h3 className="card-title"><i className="fa-solid fa-table"></i> Registro de Notas en el Sistema</h3>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                            <th style={{ padding: '10px' }}>Código</th>
+                            <th style={{ padding: '10px' }}>Estudiante</th>
+                            <th style={{ padding: '10px', textAlign: 'center', width: '100px' }}>PC 1</th>
+                            <th style={{ padding: '10px', textAlign: 'center', width: '100px' }}>PC 2</th>
+                            <th style={{ padding: '10px', textAlign: 'center', width: '100px' }}>EC</th>
+                            <th style={{ padding: '10px', textAlign: 'center', width: '100px' }}>EF</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Promedio</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Consolidada</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {notasSeccion.map((row) => (
+                            <tr key={row.detalle_matricula_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                              <td style={{ padding: '10px', fontWeight: 600 }}>{row.codigo_estudiante}</td>
+                              <td style={{ padding: '10px' }}>{row.nombre}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  value={notasEditState[row.detalle_matricula_id]?.nota_parcial1 || 0}
+                                  disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                                  onChange={(e) => {
+                                    setNotasEditState({
+                                      ...notasEditState,
+                                      [row.detalle_matricula_id]: {
+                                        ...notasEditState[row.detalle_matricula_id],
+                                        nota_parcial1: e.target.value
+                                      }
+                                    });
+                                  }}
+                                  style={{ width: '70px', padding: '5px', textAlign: 'center', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                                />
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  value={notasEditState[row.detalle_matricula_id]?.nota_parcial2 || 0}
+                                  disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                                  onChange={(e) => {
+                                    setNotasEditState({
+                                      ...notasEditState,
+                                      [row.detalle_matricula_id]: {
+                                        ...notasEditState[row.detalle_matricula_id],
+                                        nota_parcial2: e.target.value
+                                      }
+                                    });
+                                  }}
+                                  style={{ width: '70px', padding: '5px', textAlign: 'center', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                                />
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  value={notasEditState[row.detalle_matricula_id]?.evaluacion_continua || 0}
+                                  disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                                  onChange={(e) => {
+                                    setNotasEditState({
+                                      ...notasEditState,
+                                      [row.detalle_matricula_id]: {
+                                        ...notasEditState[row.detalle_matricula_id],
+                                        evaluacion_continua: e.target.value
+                                      }
+                                    });
+                                  }}
+                                  style={{ width: '70px', padding: '5px', textAlign: 'center', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                                />
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  step="0.5"
+                                  value={notasEditState[row.detalle_matricula_id]?.examen_final || 0}
+                                  disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                                  onChange={(e) => {
+                                    setNotasEditState({
+                                      ...notasEditState,
+                                      [row.detalle_matricula_id]: {
+                                        ...notasEditState[row.detalle_matricula_id],
+                                        examen_final: e.target.value
+                                      }
+                                    });
+                                  }}
+                                  style={{ width: '70px', padding: '5px', textAlign: 'center', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                                />
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center', fontWeight: 700 }}>
+                                {row.nota.promedio_final}
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <span style={{ color: row.nota.consolidada ? 'var(--success)' : 'var(--danger)' }}>
+                                  {row.nota.consolidada ? 'SI' : 'NO'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <button
+                                  onClick={() => handleUpdateNota(seccionSeleccionada.seccion_id, row.detalle_matricula_id)}
+                                  disabled={seccionSeleccionada.estado_acta === 'ENVIADA' || seccionSeleccionada.estado_acta === 'CONSOLIDADA'}
+                                  className="btn"
+                                  style={{ padding: '5px 10px', fontSize: '0.75rem', backgroundColor: 'var(--success)', color: 'white', border: 'none' }}
+                                >
+                                  <i className="fa-solid fa-save"></i> Guardar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 9. SUPERVISIÓN DIRECCIÓN VIEW */}
+          {activeTab === 'supervision_direccion' && (user?.role === 'direccion' || user?.role === 'administrador') && supervisionData && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.8rem' }}>Supervisión de Cursos</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Métricas del plan de estudios y cumplimiento docente del periodo.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '25px' }}>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>SECCIONES CON DOCENTE</span>
+                  <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{supervisionData.indicadores.porcentaje_secciones_con_docente}%</h3>
+                  <span style={{ fontSize: '0.75rem' }}>{supervisionData.indicadores.secciones_con_docente} / {supervisionData.indicadores.total_secciones} secciones</span>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>SÍLABOS CARGADOS</span>
+                  <h3 style={{ fontSize: '1.8rem', color: 'var(--success)' }}>{supervisionData.indicadores.porcentaje_silabos_cargados}%</h3>
+                  <span style={{ fontSize: '0.75rem' }}>{supervisionData.indicadores.silabos_cargados} / {supervisionData.indicadores.total_secciones} sílabos</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-user-clock"></i> Reporte de Carga Horaria Docente</h3>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                        <th style={{ padding: '8px' }}>Docente</th>
+                        <th style={{ padding: '8px' }}>Secciones</th>
+                        <th style={{ padding: '8px' }}>Créditos</th>
+                        <th style={{ padding: '8px' }}>Horas Semanales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {supervisionData.carga_docentes.map((d, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '8px', fontWeight: 600 }}>{d.nombre}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>{d.total_secciones}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>{d.total_creditos}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>{d.total_horas} hrs</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-triangle-exclamation"></i> Secciones sin Docente Asignado</h3>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                        <th style={{ padding: '8px' }}>Curso</th>
+                        <th style={{ padding: '8px' }}>Código</th>
+                        <th style={{ padding: '8px' }}>Sección</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {supervisionData.secciones_sin_docente.length === 0 ? (
+                        <tr>
+                          <td colSpan="3" style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)' }}>Todo en orden. Todas las secciones tienen docente.</td>
+                        </tr>
+                      ) : (
+                        supervisionData.secciones_sin_docente.map((s, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '8px' }}>{s.nombre_curso}</td>
+                            <td style={{ padding: '8px' }}>{s.codigo_curso}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>{s.seccion}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 10. INDICADORES DIRECCIÓN VIEW */}
+          {activeTab === 'indicadores_direccion' && (user?.role === 'direccion' || user?.role === 'administrador') && indicadoresData && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.8rem' }}>Indicadores Académicos</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Reportes estadísticos de rendimiento del alumnado y actas consolidadas.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '25px' }}>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>PROMEDIO INSTITUCIONAL</span>
+                  <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{indicadoresData.indicadores.promedio_institucional}</h3>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>TASA DE APROBACIÓN</span>
+                  <h3 style={{ fontSize: '1.8rem', color: 'var(--success)' }}>{indicadoresData.indicadores.tasa_aprobacion}%</h3>
+                </div>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>TASA DE DESAPROBACIÓN</span>
+                  <h3 style={{ fontSize: '1.8rem', color: 'var(--danger)' }}>{indicadoresData.indicadores.tasa_desaprobacion}%</h3>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                <div className="card" style={{ marginBottom: 0 }}>
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-circle-check"></i> Actas de Notas del Periodo</h3>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', lineHeight: '1.8' }}>
+                    <p>Actas Consolidadas Oficiales: <strong style={{ color: 'var(--success)' }}>{indicadoresData.indicadores.actas_consolidadas} actas</strong></p>
+                    <p>Actas Pendientes de Aprobación: <strong style={{ color: 'var(--warning)' }}>{indicadoresData.indicadores.actas_pendientes} actas</strong></p>
+                    <p>Total Calificaciones Registradas: <strong>{indicadoresData.indicadores.total_notas_evaluadas} registros</strong></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 11. VALIDAR ACTAS VIEW */}
+          {activeTab === 'actas_direccion' && (user?.role === 'direccion' || user?.role === 'administrador') && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontFamily: 'Lora, serif', fontSize: '1.8rem' }}>Validación y Consolidación de Actas</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Revisión de actas oficiales de notas enviadas por los docentes para su publicación.</p>
+              </div>
+
+              {!actaSeleccionada ? (
+                <div className="card">
+                  <div className="card-header">
+                    <h3 className="card-title"><i className="fa-solid fa-clipboard-list"></i> Actas de Notas Recibidas</h3>
+                  </div>
+                  
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                          <th style={{ padding: '10px' }}>ID Acta</th>
+                          <th style={{ padding: '10px' }}>Curso</th>
+                          <th style={{ padding: '10px' }}>Sección</th>
+                          <th style={{ padding: '10px' }}>Docente</th>
+                          <th style={{ padding: '10px' }}>Estudiantes</th>
+                          <th style={{ padding: '10px' }}>Fecha Envío</th>
+                          <th style={{ padding: '10px' }}>Estado</th>
+                          <th style={{ padding: '10px', textAlign: 'center' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {actasList.length === 0 ? (
+                          <tr>
+                            <td colSpan="8" style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                              No hay actas enviadas pendientes en este momento
+                            </td>
+                          </tr>
+                        ) : (
+                          actasList.map((a) => (
+                            <tr key={a.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                              <td style={{ padding: '10px', fontWeight: 600 }}>{a.id}</td>
+                              <td style={{ padding: '10px' }}>{a.seccion.curso} ({a.seccion.codigo_curso})</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>{a.seccion.codigo_seccion}</td>
+                              <td style={{ padding: '10px' }}>{a.seccion.docente}</td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>{a.cantidad_estudiantes}</td>
+                              <td style={{ padding: '10px' }}>{a.fecha_envio ? new Date(a.fecha_envio).toLocaleString('es-PE') : 'No registrada'}</td>
+                              <td style={{ padding: '10px' }}>
+                                <span style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  backgroundColor: a.estado === 'CONSOLIDADA' ? 'var(--success-light)' : a.estado === 'ENVIADA' ? 'var(--warning-light)' : 'var(--danger-light)',
+                                  color: a.estado === 'CONSOLIDADA' ? 'var(--success)' : a.estado === 'ENVIADA' ? 'var(--warning)' : 'var(--danger)'
+                                }}>
+                                  {a.estado}
+                                </span>
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${API_BASE_URL}/direccion/actas/${a.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                                      const data = await res.json();
+                                      if (res.ok) setActaSeleccionada(data);
+                                    } catch (err) { alert('Error al cargar detalle'); }
+                                  }}
+                                  className="btn"
+                                  style={{ padding: '4px 10px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', fontSize: '0.8rem' }}
+                                >
+                                  <i className="fa-solid fa-eye"></i> Revisar
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <button onClick={() => setActaSeleccionada(null)} className="btn" style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-main)', border: 'none', marginBottom: '15px' }}>
+                    <i className="fa-solid fa-arrow-left"></i> Volver a Actas
+                  </button>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                    <div className="card" style={{ marginBottom: 0 }}>
+                      <div className="card-header">
+                        <h3 className="card-title"><i className="fa-solid fa-circle-check"></i> Detalle del Acta</h3>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
+                        <p>ID Acta: <strong>{actaSeleccionada.id}</strong></p>
+                        <p>Curso: <strong>{actaSeleccionada.seccion.curso} ({actaSeleccionada.seccion.codigo_curso})</strong></p>
+                        <p>Sección: <strong>{actaSeleccionada.seccion.codigo_seccion}</strong></p>
+                        <p>Docente: <strong>{actaSeleccionada.seccion.docente}</strong></p>
+                        <p>Estado Actual: <strong style={{ color: 'var(--warning)' }}>{actaSeleccionada.estado}</strong></p>
+                      </div>
+                    </div>
+
+                    <div className="card" style={{ marginBottom: 0 }}>
+                      <div className="card-header">
+                        <h3 className="card-title"><i className="fa-solid fa-gavel"></i> Acciones de Decisión</h3>
+                      </div>
+                      <div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>Observaciones (Obligatorio si se observa)</label>
+                          <textarea
+                            value={obsActa}
+                            onChange={(e) => setObsActa(e.target.value)}
+                            placeholder="Escriba aquí las observaciones si encuentra inconsistencias..."
+                            style={{ width: '100%', padding: '8px', border: '1px solid var(--border-color)', borderRadius: '4px', height: '80px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button
+                            onClick={() => {
+                              if (!obsActa) { alert('Ingrese observaciones para observar el acta.'); return; }
+                              handleCambiarEstadoActa(actaSeleccionada.id, 'OBSERVADA');
+                            }}
+                            className="btn"
+                            style={{ flex: 1, backgroundColor: 'var(--danger)', color: 'white', border: 'none' }}
+                          >
+                            Observar Acta
+                          </button>
+                          <button
+                            onClick={() => handleCambiarEstadoActa(actaSeleccionada.id, 'CONSOLIDADA')}
+                            className="btn"
+                            style={{ flex: 1, backgroundColor: 'var(--success)', color: 'white', border: 'none' }}
+                          >
+                            Consolidar Acta
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div className="card-header">
+                      <h3 className="card-title"><i className="fa-solid fa-table"></i> Calificaciones Cargadas</h3>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)' }}>
+                          <th style={{ padding: '8px' }}>Código Estudiante</th>
+                          <th style={{ padding: '8px' }}>Nombre</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>PC 1</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>PC 2</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>EC</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>EF</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>Promedio</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {actaSeleccionada.notas.map((n, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: '8px', fontWeight: 600 }}>{n.codigo_estudiante}</td>
+                            <td style={{ padding: '8px' }}>{n.nombre}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>{n.nota ? n.nota.nota_parcial1 : '-'}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>{n.nota ? n.nota.nota_parcial2 : '-'}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>{n.nota ? n.nota.evaluacion_continua : '-'}</td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>{n.nota ? n.nota.examen_final : '-'}</td>
+                            <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700 }}>{n.nota ? n.nota.promedio_final : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

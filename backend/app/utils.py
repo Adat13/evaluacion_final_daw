@@ -27,3 +27,18 @@ def role_required(allowed_roles):
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
+def is_password_secure(password):
+    """
+    Checks if a password meets the strength criteria:
+    - Minimum 8 characters.
+    - At least one uppercase letter.
+    - At least one numerical digit.
+    """
+    if len(password) < 8:
+        return False, "La contraseña debe tener al menos 8 caracteres."
+    if not any(char.isupper() for char in password):
+        return False, "La contraseña debe contener al menos una letra mayúscula."
+    if not any(char.isdigit() for char in password):
+        return False, "La contraseña debe contener al menos un número."
+    return True, ""

@@ -8,7 +8,7 @@ from datetime import datetime, date
 from app.models import (
     db, User, AuditLog, Facultad, Especialidad, PlanEstudios,
     Curso, PeriodoAcad, Estudiante, Docente, Seccion,
-    Matricula, DetalleMatricula, Nota, SolicitudDocumento
+    Matricula, DetalleMatricula, Nota, SolicitudDocumento, Acta
 )
 
 def create_app():
@@ -24,11 +24,32 @@ def create_app():
     # Initialize JWT
     jwt = JWTManager(app)
     
+    # Global security headers
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        return response
+    
     # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
+    from app.routes.docente import docente_bp
+    from app.routes.estudiante import estudiante_bp
+    from app.routes.direccion import direccion_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(docente_bp, url_prefix='/api/docente')
+    app.register_blueprint(estudiante_bp, url_prefix='/api/estudiante')
+    app.register_blueprint(direccion_bp, url_prefix='/api/direccion')
+    
+    # Descarga de archivos (silabos)
+    @app.route('/api/uploads/silabos/<path:filename>', methods=['GET'])
+    def descargar_silabo(filename):
+        from flask import send_from_directory
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
     
     # Create DB tables and seed initial data
     with app.app_context():

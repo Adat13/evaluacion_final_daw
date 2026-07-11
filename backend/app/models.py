@@ -311,6 +311,39 @@ class Nota(db.Model):
             'consolidada': self.consolidada
         }
 
+    def calcular_promedio(self):
+        p1 = float(self.nota_parcial1) if self.nota_parcial1 else 0.0
+        p2 = float(self.nota_parcial2) if self.nota_parcial2 else 0.0
+        ec = float(self.evaluacion_continua) if self.evaluacion_continua else 0.0
+        ef = float(self.examen_final) if self.examen_final else 0.0
+        self.promedio_final = round((p1 + p2 + ec + ef) / 4, 2)
+
+class Acta(db.Model):
+    __tablename__ = 'actas'
+    id = db.Column(db.Integer, primary_key=True)
+    seccion_id = db.Column(db.Integer, db.ForeignKey('secciones.id', ondelete='CASCADE'), nullable=False)
+    usuario_id_creacion = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    estado = db.Column(db.String(30), default='BORRADOR', nullable=False) # 'BORRADOR', 'ENVIADA', 'OBSERVADA', 'APROBADA', 'CONSOLIDADA'
+    fecha_envio = db.Column(db.DateTime, nullable=True)
+    fecha_aprobacion = db.Column(db.DateTime, nullable=True)
+    fecha_consolidacion = db.Column(db.DateTime, nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+    
+    seccion = db.relationship('Seccion', backref=db.backref('acta', uselist=False, cascade="all, delete-orphan"))
+    usuario_creacion = db.relationship('User', foreign_keys=[usuario_id_creacion])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'seccion_id': self.seccion_id,
+            'usuario_id_creacion': self.usuario_id_creacion,
+            'estado': self.estado,
+            'fecha_envio': self.fecha_envio.isoformat() if self.fecha_envio else None,
+            'fecha_aprobacion': self.fecha_aprobacion.isoformat() if self.fecha_aprobacion else None,
+            'fecha_consolidacion': self.fecha_consolidacion.isoformat() if self.fecha_consolidacion else None,
+            'observaciones': self.observaciones
+        }
+
 class SolicitudDocumento(db.Model):
     __tablename__ = 'solicitudes_documento'
     id = db.Column(db.Integer, primary_key=True)

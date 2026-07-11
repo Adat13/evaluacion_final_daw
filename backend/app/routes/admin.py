@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import db, User, AuditLog
-from app.utils import role_required
+from app.utils import role_required, is_password_secure
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -34,6 +34,10 @@ def create_user():
     # Check uniqueness
     if User.query.filter((User.username == username) | (User.email == email)).first():
         return jsonify({'error': 'El nombre de usuario o email ya está en uso'}), 400
+        
+    is_secure, error_msg = is_password_secure(password)
+    if not is_secure:
+        return jsonify({'error': error_msg}), 400
         
     new_user = User(
         username=username,
