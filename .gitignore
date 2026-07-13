@@ -32,6 +32,7 @@ ENV/
 *.njsproj
 *.sln
 *.sw?
-
 # Zip files
 *.zip
+
+frontend/package-lock.json

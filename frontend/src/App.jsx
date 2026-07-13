@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import ProcesoMatricula from './components/matricula/ProcesoMatricula';
+import MisMatriculas from './components/matricula/MisMatriculas';
+import GestionSolicitudes from './components/matricula/GestionSolicitudes';
+import EstadisticasMatricula from './components/matricula/EstadisticasMatricula';
+import RecordEstudiante from './components/record/RecordEstudiante';
+import ReportesConsolidados from './components/record/ReportesConsolidados';
+import AnalisisCohorte from './components/record/AnalisisCohorte';
+import SolicitudCertificados from './components/certificados/SolicitudCertificados';
+import GestionCertificados from './components/certificados/GestionCertificados';
+import AutorizacionCertificados from './components/certificados/AutorizacionCertificados';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -956,6 +966,26 @@ function App() {
                       <i className="fa-solid fa-file-signature"></i> Validar Actas
                     </a>
                   </li>
+                  <li className={`sidebar-item ${activeTab === 'gestion_matriculas' ? 'active' : ''}`}>
+                    <a href="#gestion_matriculas" onClick={() => setActiveTab('gestion_matriculas')}>
+                      <i className="fa-solid fa-folder-open"></i> Gestión de Matrículas
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'reportes_consolidados' ? 'active' : ''}`}>
+                    <a href="#reportes_consolidados" onClick={() => setActiveTab('reportes_consolidados')}>
+                      <i className="fa-solid fa-graduation-cap"></i> Reportes Académicos
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'gestion_certificados' ? 'active' : ''}`}>
+                    <a href="#gestion_certificados" onClick={() => setActiveTab('gestion_certificados')}>
+                      <i className="fa-solid fa-file-invoice"></i> Gestión de Certificados
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'estadisticas_matricula' ? 'active' : ''}`}>
+                    <a href="#estadisticas" onClick={() => setActiveTab('estadisticas_matricula')}>
+                      <i className="fa-solid fa-chart-pie"></i> Estadísticas Matrícula
+                    </a>
+                  </li>
                   <li className={`sidebar-item ${activeTab === 'audit_logs' ? 'active' : ''}`}>
                     <a href="#logs" onClick={() => setActiveTab('audit_logs')}>
                       <i className="fa-solid fa-shield-halved"></i> Bitácora de Auditoría
@@ -981,6 +1011,21 @@ function App() {
                       <i className="fa-solid fa-file-signature"></i> Validar Actas
                     </a>
                   </li>
+                  <li className={`sidebar-item ${activeTab === 'rendimiento_cohorte' ? 'active' : ''}`}>
+                    <a href="#rendimiento_cohorte" onClick={() => setActiveTab('rendimiento_cohorte')}>
+                      <i className="fa-solid fa-chart-line"></i> Rendimiento por Cohorte
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'autorizar_certificados' ? 'active' : ''}`}>
+                    <a href="#autorizar_certificados" onClick={() => setActiveTab('autorizar_certificados')}>
+                      <i className="fa-solid fa-user-shield"></i> Autorizar Certificados
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'estadisticas_matricula' ? 'active' : ''}`}>
+                    <a href="#estadisticas" onClick={() => setActiveTab('estadisticas_matricula')}>
+                      <i className="fa-solid fa-chart-pie"></i> Estadísticas Matrícula
+                    </a>
+                  </li>
                   <li className={`sidebar-item ${activeTab === 'audit_logs' ? 'active' : ''}`}>
                     <a href="#logs" onClick={() => setActiveTab('audit_logs')}>
                       <i className="fa-solid fa-shield-halved"></i> Bitácora de Auditoría
@@ -991,9 +1036,19 @@ function App() {
 
               {user?.role === 'estudiante' && (
                 <>
+                  <li className={`sidebar-item ${activeTab === 'proceso_matricula' ? 'active' : ''}`}>
+                    <a href="#proceso_matricula" onClick={() => setActiveTab('proceso_matricula')}>
+                      <i className="fa-solid fa-file-signature"></i> Matrícula en Línea
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'mis_matriculas' ? 'active' : ''}`}>
+                    <a href="#mis_matriculas" onClick={() => setActiveTab('mis_matriculas')}>
+                      <i className="fa-solid fa-folder-open"></i> Mis Matrículas
+                    </a>
+                  </li>
                   <li className={`sidebar-item ${activeTab === 'matricula_estudiante' ? 'active' : ''}`}>
                     <a href="#matricula" onClick={() => setActiveTab('matricula_estudiante')}>
-                      <i className="fa-solid fa-file-signature"></i> Matrícula en Línea
+                      <i className="fa-solid fa-list-check"></i> Matrícula (Secciones)
                     </a>
                   </li>
                   <li className={`sidebar-item ${activeTab === 'notas_estudiante' ? 'active' : ''}`}>
@@ -1001,9 +1056,19 @@ function App() {
                       <i className="fa-solid fa-file-invoice"></i> Consultar Notas
                     </a>
                   </li>
+                  <li className={`sidebar-item ${activeTab === 'record_estudiante' ? 'active' : ''}`}>
+                    <a href="#record" onClick={() => setActiveTab('record_estudiante')}>
+                      <i className="fa-solid fa-graduation-cap"></i> Mi Récord Académico
+                    </a>
+                  </li>
                   <li className={`sidebar-item ${activeTab === 'certificados_estudiante' ? 'active' : ''}`}>
                     <a href="#certificados" onClick={() => setActiveTab('certificados_estudiante')}>
-                      <i className="fa-solid fa-file-pdf"></i> Trámites y Certificados
+                      <i className="fa-solid fa-file-contract"></i> Certificados (ERP)
+                    </a>
+                  </li>
+                  <li className={`sidebar-item ${activeTab === 'certificados_tradicional' ? 'active' : ''}`}>
+                    <a href="#certificados_firma" onClick={() => setActiveTab('certificados_tradicional')}>
+                      <i className="fa-solid fa-file-pdf"></i> Trámites y Firmas
                     </a>
                   </li>
                 </>
@@ -1034,6 +1099,42 @@ function App() {
 
         {/* Content Area */}
         <main className="content-area">
+          {/* VISTAS DE MATRICULA */}
+          {activeTab === 'proceso_matricula' && user?.role === 'estudiante' && (
+            <ProcesoMatricula token={token} alTerminar={() => setActiveTab('mis_matriculas')} />
+          )}
+          {activeTab === 'mis_matriculas' && user?.role === 'estudiante' && (
+            <MisMatriculas token={token} alSolicitarNueva={() => setActiveTab('proceso_matricula')} />
+          )}
+          {activeTab === 'gestion_matriculas' && user?.role === 'administrador' && (
+            <GestionSolicitudes token={token} />
+          )}
+          {activeTab === 'estadisticas_matricula' && (user?.role === 'direccion' || user?.role === 'administrador') && (
+            <EstadisticasMatricula token={token} />
+          )}
+
+          {/* VISTAS DE RECORD ACADEMICO */}
+          {activeTab === 'record_estudiante' && user?.role === 'estudiante' && (
+            <RecordEstudiante token={token} />
+          )}
+          {activeTab === 'reportes_consolidados' && user?.role === 'administrador' && (
+            <ReportesConsolidados token={token} />
+          )}
+          {activeTab === 'rendimiento_cohorte' && user?.role === 'direccion' && (
+            <AnalisisCohorte token={token} />
+          )}
+
+          {/* VISTAS DE CERTIFICADOS */}
+          {activeTab === 'certificados_estudiante' && user?.role === 'estudiante' && (
+            <SolicitudCertificados token={token} />
+          )}
+          {activeTab === 'gestion_certificados' && user?.role === 'administrador' && (
+            <GestionCertificados token={token} />
+          )}
+          {activeTab === 'autorizar_certificados' && user?.role === 'direccion' && (
+            <AutorizacionCertificados token={token} />
+          )}
+
           {/* 1. INICIO VIEW */}
           {activeTab === 'inicio' && (
             <div>
@@ -1618,7 +1719,7 @@ function App() {
           )}
 
           {/* 7. CERTIFICADOS ESTUDIANTE VIEW */}
-          {activeTab === 'certificados_estudiante' && user?.role === 'estudiante' && (
+          {activeTab === 'certificados_tradicional' && user?.role === 'estudiante' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
               <div className="card">
                 <div className="card-header">
