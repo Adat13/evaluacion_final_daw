@@ -8,7 +8,9 @@ from datetime import datetime, date
 from app.models import (
     db, User, AuditLog, Facultad, Especialidad, PlanEstudios,
     Curso, PeriodoAcad, Estudiante, Docente, Seccion,
-    Matricula, DetalleMatricula, Nota, SolicitudDocumento, Acta
+    Matricula, DetalleMatricula, Nota, SolicitudDocumento, Acta,
+    PeriodoMatricula, EstudiantePerfil, SolicitudMatricula, DetalleSolicitud,
+    NotaHistorica, SolicitudCertificado
 )
 
 def create_app():
@@ -39,11 +41,18 @@ def create_app():
     from app.routes.docente import docente_bp
     from app.routes.estudiante import estudiante_bp
     from app.routes.direccion import direccion_bp
+    from app.routes.matricula import matricula_bp
+    from app.routes.certificados import certificados_bp
+    from app.routes.record import record_bp
+    
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(docente_bp, url_prefix='/api/docente')
     app.register_blueprint(estudiante_bp, url_prefix='/api/estudiante')
     app.register_blueprint(direccion_bp, url_prefix='/api/direccion')
+    app.register_blueprint(matricula_bp, url_prefix='/api/matricula')
+    app.register_blueprint(certificados_bp, url_prefix='/api/certificados')
+    app.register_blueprint(record_bp, url_prefix='/api/record')
     
     # Descarga de archivos (silabos)
     @app.route('/api/uploads/silabos/<path:filename>', methods=['GET'])
@@ -292,4 +301,12 @@ def seed_data():
     db.session.add(constancia_juan)
     db.session.commit()
     
+    # Seed Benjamin's matricula and historical grades
+    from app.seed import seed_matricula, seed_notas_historicas
+    try:
+        seed_matricula()
+        seed_notas_historicas()
+    except Exception as e:
+        print(f"Error seeding Benjamin's data: {e}")
+        
     print("Seed complete.")
