@@ -325,6 +325,23 @@ def seed_rich_data():
     db.session.add(sol_cert_camila)
     db.session.commit()
 
+    # 11.5. Actas de Calificaciones
+    acta_bda = Acta(
+        seccion_id=seccion_bda.id,
+        usuario_id_creacion=docente_rojas.id,
+        estado="ENVIADA",
+        fecha_envio=datetime.now(),
+        observaciones="Acta de base de datos avanzada enviada para consolidación."
+    )
+    acta_daw = Acta(
+        seccion_id=seccion_daw.id,
+        usuario_id_creacion=docente_jaime.id,
+        estado="BORRADOR",
+        observaciones="Borrador de desarrollo de aplicaciones web."
+    )
+    db.session.add_all([acta_bda, acta_daw])
+    db.session.commit()
+
     # 12. Logs de Auditoría
     logs = [
         AuditLog(user_id=admin.id, username=admin.username, action="USER_LOGIN", ip_address="127.0.0.1", details="Inicio de sesión exitoso del administrador."),

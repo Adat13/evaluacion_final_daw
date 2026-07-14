@@ -21,7 +21,7 @@ export default function GestionCertificados({ token }) {
   const cargarSolicitudes = async () => {
     setCargando(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/certificados/solicitudes?estado=${filtroEstado}&tipo_documento=${filtroTipo}&search=${busqueda}`, {
+      const res = await fetch(`http://localhost:5000/api/certificados/solicitudes?estado=${filtroEstado}&tipo_documento=${filtroTipo}&search=${busqueda}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -38,7 +38,7 @@ export default function GestionCertificados({ token }) {
   const cambiarEstado = async (id, estado, rechazoMotive = '') => {
     setErrorMsg('');
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/certificados/${id}/estado`, {
+      const res = await fetch(`http://localhost:5000/api/certificados/${id}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ estado, motivo_rechazo: rechazoMotive })
