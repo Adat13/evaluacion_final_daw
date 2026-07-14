@@ -119,6 +119,9 @@ def seed_rich_data():
         plan_id=plan.id,
         periodo_id=periodo_mat.id,
         horario="Lunes 07:45 - 11:30",
+        dia_semana="Lunes",
+        hora_inicio="07:45",
+        hora_fin="11:30",
         cupos_max=30,
         cupos_ocupados=7
     )
@@ -130,6 +133,9 @@ def seed_rich_data():
         plan_id=plan.id,
         periodo_id=periodo_mat.id,
         horario="Martes 07:45 - 10:45",
+        dia_semana="Martes",
+        hora_inicio="07:45",
+        hora_fin="10:45",
         cupos_max=30,
         cupos_ocupados=7
     )
@@ -141,6 +147,9 @@ def seed_rich_data():
         plan_id=plan.id,
         periodo_id=periodo_mat.id,
         horario="Miércoles 11:30 - 15:15",
+        dia_semana="Miércoles",
+        hora_inicio="11:30",
+        hora_fin="15:15",
         cupos_max=30,
         cupos_ocupados=7
     )
@@ -152,6 +161,9 @@ def seed_rich_data():
         plan_id=plan.id,
         periodo_id=periodo_mat.id,
         horario="Jueves 07:45 - 11:30",
+        dia_semana="Jueves",
+        hora_inicio="07:45",
+        hora_fin="11:30",
         cupos_max=30,
         cupos_ocupados=7
     )

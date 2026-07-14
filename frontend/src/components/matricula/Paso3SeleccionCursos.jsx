@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 
 // Valida si dos cursos se cruzan en su horario
 function verificarCruce(c1, c2) {
+  if (!c1.dia_semana || !c2.dia_semana) return false;
+  if (!c1.hora_inicio || !c1.hora_fin || !c2.hora_inicio || !c2.hora_fin) return false;
+
   const dias1 = c1.dia_semana.split(',');
   const dias2 = c2.dia_semana.split(',');
   const diasComunes = dias1.filter(d => dias2.includes(d));
