@@ -268,3 +268,208 @@ def analisis_cohorte():
             '2025-II': 95
         }
     }), 200
+
+@record_bp.route('/verificar/<string:username>', methods=['GET'])
+def verificar_record(username):
+    from flask import render_template_string
+    estudiante = User.query.filter_by(username=username).first()
+    
+    html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Validación de Documento Oficial - UNCP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #002f6c;
+            --secondary: #e6a100;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-muted: #7f8c8d;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-top: 6px solid var(--secondary);
+        }
+        .header {
+            background-color: var(--primary);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 {
+            margin: 5px 0;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            font-family: Georgia, serif;
+        }
+        .header p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #d1d5db;
+        }
+        .badge-container {
+            text-align: center;
+            margin-top: -25px;
+            margin-bottom: 20px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+        }
+        .badge.error {
+            background-color: var(--danger);
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+        }
+        .content {
+            padding: 20px 30px 30px 30px;
+        }
+        .title {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .info-table td {
+            padding: 12px 6px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .info-table td.label {
+            font-weight: 600;
+            color: var(--text-muted);
+            width: 40%;
+        }
+        .info-table td.value {
+            font-weight: 500;
+            color: var(--text);
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid #f1f5f9;
+            padding: 15px;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <i class="fa-solid fa-graduation-cap" style="font-size: 2.2rem; color: var(--secondary); margin-bottom: 8px;"></i>
+            <h1>UNIVERSIDAD NACIONAL DEL CENTRO DEL PERÚ</h1>
+            <p>Facultad de Ingeniería de Sistemas — ERP Académico</p>
+        </div>
+        
+        <div class="badge-container">
+            {% if valido %}
+            <span class="badge">
+                <i class="fa-solid fa-circle-check" style="font-size: 1.1rem;"></i> DOCUMENTO VÁLIDO
+            </span>
+            {% else %}
+            <span class="badge error">
+                <i class="fa-solid fa-circle-xmark" style="font-size: 1.1rem;"></i> DOCUMENTO INEXISTENTE
+            </span>
+            {% endif %}
+        </div>
+        
+        <div class="content">
+            {% if valido %}
+            <div class="title">{{ tipo_documento }}</div>
+            <table class="info-table">
+                <tr>
+                    <td class="label">Documento:</td>
+                    <td class="value">Récord Académico Consolidado</td>
+                </tr>
+                <tr>
+                    <td class="label">Estudiante:</td>
+                    <td class="value"><b>{{ estudiante }}</b></td>
+                </tr>
+                <tr>
+                    <td class="label">Código Alumno:</td>
+                    <td class="value"><code>{{ codigo_estudiante }}</code></td>
+                </tr>
+                <tr>
+                    <td class="label">Promedio (PPA):</td>
+                    <td class="value">{{ ppa }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Créditos Aprobados:</td>
+                    <td class="value">{{ creditos }} cr</td>
+                </tr>
+            </table>
+            {% else %}
+            <div class="title" style="color: var(--danger);">Error de Validación</div>
+            <p style="text-align: center; font-size: 0.9rem; color: var(--text-muted);">
+                El récord académico solicitado no se encuentra registrado en nuestra base de datos central o el alumno no existe.
+            </p>
+            {% endif %}
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--success); font-size: 1.5rem; margin-bottom: 5px;"></i>
+                <span style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--success);">Firma Digital UNCP Verificada</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            © 2026 UNCP FIS. Todos los derechos reservados.
+        </div>
+    </div>
+</body>
+</html>
+    """
+
+    if not estudiante:
+        return render_template_string(html_template, valido=False), 404
+        
+    kpis = _calcular_kpis_estudiante(estudiante.id)
+    return render_template_string(
+        html_template, 
+        valido=True,
+        tipo_documento="Récord Académico Histórico Oficial",
+        estudiante=estudiante.name,
+        codigo_estudiante=estudiante.username,
+        ppa=kpis['ppa'],
+        creditos=kpis['creditos_aprobados']
+    ), 200
