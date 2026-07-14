@@ -90,7 +90,6 @@ def obtener_record_estudiante(estudiante_id):
     }), 200
 
 @record_bp.route('/estudiante/<int:estudiante_id>/pdf', methods=['GET'])
-@jwt_required()
 def descargar_record_pdf(estudiante_id):
     # Descargar record en PDF con QR (REC-EST-001, REC-ADM-001)
     estudiante = User.query.get_or_404(estudiante_id)
