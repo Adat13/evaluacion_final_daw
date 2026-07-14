@@ -1209,13 +1209,50 @@ function App() {
                   <h3 className="card-title"><i className="fa-solid fa-circle-info"></i> Resumen del Sistema Académico (ERP)</h3>
                 </div>
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
-                  <p>Te encuentras en el panel de control institucional de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como administrador de la plataforma, puedes supervisar y gestionar:</p>
-                  <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
-                    <li><strong>Control de Matrícula y Secciones</strong>: Validación de requisitos, costos académicos y estados de pago.</li>
-                    <li><strong>Registro de Notas y Actas</strong>: Seguimiento a calificaciones parciales, consolidados académicos y actas firmadas.</li>
-                    <li><strong>Trámites y Certificados</strong>: Emisión de constancias de matrícula y notas certificadas con validación digital.</li>
-                    <li><strong>Bitácora de Auditoría en Tiempo Real</strong>: Control detallado de accesos, seguridad y acciones del personal.</li>
-                  </ul>
+                  {user?.role === 'administrador' && (
+                    <>
+                      <p>Te encuentras en el panel de control institucional de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como administrador de la plataforma, puedes supervisar y gestionar:</p>
+                      <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
+                        <li><strong>Control de Usuarios</strong>: Registrar, editar y dar de baja a estudiantes, docentes y directivos.</li>
+                        <li><strong>Gestión de Matrículas</strong>: Validar los comprobantes de pago (vouchers) y autorizar matrículas de alumnos.</li>
+                        <li><strong>Emisión de Certificados</strong>: Generar y firmar digitalmente constancias oficiales con validación QR.</li>
+                        <li><strong>Bitácora de Auditoría en Tiempo Real</strong>: Supervisar el registro de seguridad de las operaciones en base de datos.</li>
+                      </ul>
+                    </>
+                  )}
+                  {user?.role === 'docente' && (
+                    <>
+                      <p>Te encuentras en el panel de control institucional de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como docente de la facultad, puedes gestionar tus asignaturas:</p>
+                      <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
+                        <li><strong>Carga de Sílabos</strong>: Subir los documentos oficiales de tus asignaturas en formatos PDF o Word.</li>
+                        <li><strong>Registro de Calificaciones</strong>: Ingresar notas de evaluaciones parciales y continuas de tus alumnos.</li>
+                        <li><strong>Control de Actas</strong>: Firmar y enviar las actas de calificaciones a la Dirección Académica para su consolidación.</li>
+                        <li><strong>Mis Cursos</strong>: Visualizar tus secciones, horarios y listas oficiales de estudiantes inscritos.</li>
+                      </ul>
+                    </>
+                  )}
+                  {user?.role === 'estudiante' && (
+                    <>
+                      <p>Te encuentras en el panel de control de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como estudiante de la facultad, tienes acceso a los siguientes servicios:</p>
+                      <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
+                        <li><strong>Matrícula en Línea</strong>: Realizar tu pre-inscripción y subir tu comprobante de pago de créditos.</li>
+                        <li><strong>Mis Calificaciones</strong>: Consultar las notas parciales vigentes de tus asignaturas del ciclo.</li>
+                        <li><strong>Récord Académico Histórico</strong>: Ver tu promedio ponderado acumulado (PPA) y avance de malla curricular.</li>
+                        <li><strong>Trámites Digitales</strong>: Solicitar constancias de notas, matrícula o egresado directamente en línea.</li>
+                      </ul>
+                    </>
+                  )}
+                  {user?.role === 'direccion' && (
+                    <>
+                      <p>Te encuentras en el panel de control institucional de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como directivo de la facultad, puedes supervisar y autorizar:</p>
+                      <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
+                        <li><strong>Supervisión de Carga Docente</strong>: Controlar el cumplimiento de sílabos cargados por los profesores.</li>
+                        <li><strong>Indicadores Académicos</strong>: Analizar tasas de aprobación, desaprobación y rendimiento ponderado por cohorte.</li>
+                        <li><strong>Consolidación de Actas</strong>: Aprobar y bloquear definitivamente actas de notas enviadas por docentes.</li>
+                        <li><strong>Autorización de Certificados</strong>: Evaluar y pre-aprobar solicitudes de constancias de egresado o estudios.</li>
+                      </ul>
+                    </>
+                  )}
                   <p style={{ marginTop: '15px' }}>Usa el menú de navegación lateral para acceder a cada uno de los submódulos integrados del ERP.</p>
                 </div>
               </div>
