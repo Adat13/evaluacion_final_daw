@@ -120,7 +120,7 @@ def seed_rich_data():
         periodo_id=periodo_mat.id,
         horario="Lunes 07:45 - 11:30",
         cupos_max=30,
-        cupos_ocupados=5
+        cupos_ocupados=7
     )
     curso_bda = Curso(
         nombre="Base de Datos Avanzadas",
@@ -131,7 +131,7 @@ def seed_rich_data():
         periodo_id=periodo_mat.id,
         horario="Martes 07:45 - 10:45",
         cupos_max=30,
-        cupos_ocupados=5
+        cupos_ocupados=7
     )
     curso_redes = Curso(
         nombre="Redes de Computadoras II",
@@ -142,9 +142,20 @@ def seed_rich_data():
         periodo_id=periodo_mat.id,
         horario="Miércoles 11:30 - 15:15",
         cupos_max=30,
-        cupos_ocupados=3
+        cupos_ocupados=7
     )
-    db.session.add_all([curso_daw, curso_bda, curso_redes])
+    curso_calidad = Curso(
+        nombre="Aseguramiento y Calidad de Software",
+        codigo_curso="IS903",
+        codigo="IS903",
+        creditos=4,
+        plan_id=plan.id,
+        periodo_id=periodo_mat.id,
+        horario="Jueves 07:45 - 11:30",
+        cupos_max=30,
+        cupos_ocupados=7
+    )
+    db.session.add_all([curso_daw, curso_bda, curso_redes, curso_calidad])
     db.session.commit()
 
     # 6. Perfiles Académicos
@@ -193,12 +204,15 @@ def seed_rich_data():
     # 7. Secciones
     seccion_daw = Seccion(curso_id=curso_daw.id, periodo_id=p_2026_1.id, docente_id=doc_jaime_profile.id, codigo_seccion="A", capacidad=30, horario="Lunes 07:45 - 11:30")
     seccion_bda = Seccion(curso_id=curso_bda.id, periodo_id=p_2026_1.id, docente_id=doc_rojas_profile.id, codigo_seccion="A", capacidad=30, horario="Martes 07:45 - 10:45")
-    seccion_redes = Seccion(curso_id=curso_redes.id, periodo_id=p_2026_1.id, docente_id=doc_sanchez_profile.id, codigo_seccion="B", capacidad=30, horario="Miércoles 11:30 - 15:15")
-    db.session.add_all([seccion_daw, seccion_bda, seccion_redes])
+    # Redes dictado por Dr. Carlos Rojas
+    seccion_redes = Seccion(curso_id=curso_redes.id, periodo_id=p_2026_1.id, docente_id=doc_rojas_profile.id, codigo_seccion="B", capacidad=30, horario="Miércoles 11:30 - 15:15")
+    # Calidad dictado por Dr. Jaime Suasnábar Terrel
+    seccion_calidad = Seccion(curso_id=curso_calidad.id, periodo_id=p_2026_1.id, docente_id=doc_jaime_profile.id, codigo_seccion="A", capacidad=30, horario="Jueves 07:45 - 11:30")
+    db.session.add_all([seccion_daw, seccion_bda, seccion_redes, seccion_calidad])
     db.session.commit()
 
     # 8. Matrículas y Notas de Curso (Angel)
-    # Matriculamos a los 7 estudiantes en las dos secciones activas (DAW y BDA)
+    # Matriculamos a los 7 estudiantes en las 4 secciones activas (DAW, BDA, Redes, Calidad)
     notas_predefinidas = [
         (15.00, 16.00, 14.50, 0.00), # Juan
         (18.00, 17.50, 19.00, 0.00), # Camila
@@ -213,7 +227,7 @@ def seed_rich_data():
         mat = Matricula(
             estudiante_id=est_angel.id,
             periodo_id=p_2026_1.id,
-            costo_total=250.00,
+            costo_total=500.00,
             estado_pago="pagado",
             fecha_matricula=datetime.now(),
             estado_matricula="aprobada"
@@ -221,21 +235,36 @@ def seed_rich_data():
         db.session.add(mat)
         db.session.commit()
         
-        # Enrolar en DAW y BDA
+        # Enrolar en DAW, BDA, Redes, Calidad
         det_daw = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_daw.id, estado_curso="cursando")
         det_bda = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_bda.id, estado_curso="cursando")
-        db.session.add_all([det_daw, det_bda])
+        det_redes = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_redes.id, estado_curso="cursando")
+        det_calidad = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_calidad.id, estado_curso="cursando")
+        db.session.add_all([det_daw, det_bda, det_redes, det_calidad])
         db.session.commit()
         
         p1, p2, ec, ef = notas_predefinidas[idx]
-        prom_daw = round((p1 + p2 + ec + ef) / 4, 2)
         
+        # DAW
+        prom_daw = round((p1 + p2 + ec + ef) / 4, 2)
+        nota_daw = Nota(detalle_matricula_id=det_daw.id, nota_parcial1=p1, nota_parcial2=p2, evaluacion_continua=ec, examen_final=ef, promedio_final=prom_daw, consolidada=False)
+        
+        # BDA
         b1, b2, bec, bef = p1 - 1 if p1 > 5 else p1, p2, ec + 0.5 if ec < 19 else ec, 0.0
         prom_bda = round((b1 + b2 + bec + bef) / 4, 2)
-        
-        nota_daw = Nota(detalle_matricula_id=det_daw.id, nota_parcial1=p1, nota_parcial2=p2, evaluacion_continua=ec, examen_final=ef, promedio_final=prom_daw, consolidada=False)
         nota_bda = Nota(detalle_matricula_id=det_bda.id, nota_parcial1=b1, nota_parcial2=b2, evaluacion_continua=bec, examen_final=bef, promedio_final=prom_bda, consolidada=False)
-        db.session.add_all([nota_daw, nota_bda])
+        
+        # Redes
+        r1, r2, rec, ref = p1 + 1 if p1 < 19 else p1, p2 - 1 if p2 > 5 else p2, ec - 0.5 if ec > 5 else ec, 0.0
+        prom_redes = round((r1 + r2 + rec + ref) / 4, 2)
+        nota_redes = Nota(detalle_matricula_id=det_redes.id, nota_parcial1=r1, nota_parcial2=r2, evaluacion_continua=rec, examen_final=ref, promedio_final=prom_redes, consolidada=False)
+        
+        # Calidad
+        c1, c2, cec, cef = p1, p2 + 1 if p2 < 19 else p2, ec + 1.0 if ec < 19 else ec, 0.0
+        prom_calidad = round((c1 + c2 + cec + cef) / 4, 2)
+        nota_calidad = Nota(detalle_matricula_id=det_calidad.id, nota_parcial1=c1, nota_parcial2=c2, evaluacion_continua=cec, examen_final=cef, promedio_final=prom_calidad, consolidada=False)
+        
+        db.session.add_all([nota_daw, nota_bda, nota_redes, nota_calidad])
 
     # 9. Solicitudes de Matrícula (Modulo Benjamin)
     # Jhomer Saith (Solicitud Aprobada)
@@ -243,11 +272,11 @@ def seed_rich_data():
         codigo="MAT-EST-2026-00001",
         estudiante_id=est_jhomer.id,
         periodo_id=periodo_mat.id,
-        creditos_total=7,
-        monto_total=237.50,
+        creditos_total=15,
+        monto_total=337.50,
         estado="APROBADA",
         pago_registrado=True,
-        pago_monto=237.50,
+        pago_monto=337.50,
         pago_voucher="voucher_jhomer_2026.jpg",
         pago_fecha=datetime.now().strftime("%d/%m/%Y"),
         pago_metodo="Depósito Banco de la Nación"
@@ -257,15 +286,17 @@ def seed_rich_data():
     
     det_sol_jhomer_daw = DetalleSolicitud(solicitud_id=sol_jhomer.id, curso_id=curso_daw.id)
     det_sol_jhomer_bda = DetalleSolicitud(solicitud_id=sol_jhomer.id, curso_id=curso_bda.id)
-    db.session.add_all([det_sol_jhomer_daw, det_sol_jhomer_bda])
+    det_sol_jhomer_redes = DetalleSolicitud(solicitud_id=sol_jhomer.id, curso_id=curso_redes.id)
+    det_sol_jhomer_calidad = DetalleSolicitud(solicitud_id=sol_jhomer.id, curso_id=curso_calidad.id)
+    db.session.add_all([det_sol_jhomer_daw, det_sol_jhomer_bda, det_sol_jhomer_redes, det_sol_jhomer_calidad])
 
     # Irma Porras (Solicitud Pendiente de Validación de Voucher)
     sol_irma = SolicitudMatricula(
         codigo="MAT-EST-2026-00002",
         estudiante_id=est_irma.id,
         periodo_id=periodo_mat.id,
-        creditos_total=4,
-        monto_total=200.00,
+        creditos_total=15,
+        monto_total=337.50,
         estado="PENDIENTE_PAGO",
         pago_registrado=False,
         pago_monto=0.00,
@@ -275,7 +306,8 @@ def seed_rich_data():
     db.session.commit()
     
     det_sol_irma_daw = DetalleSolicitud(solicitud_id=sol_irma.id, curso_id=curso_daw.id)
-    db.session.add(det_sol_irma_daw)
+    det_sol_irma_bda = DetalleSolicitud(solicitud_id=sol_irma.id, curso_id=curso_bda.id)
+    db.session.add_all([det_sol_irma_daw, det_sol_irma_bda])
 
     # 10. Notas Históricas (Para Record Académico)
     notas_historicas = [
@@ -348,20 +380,15 @@ def seed_rich_data():
     db.session.commit()
 
     # 11.5. Actas de Calificaciones
-    acta_bda = Acta(
-        seccion_id=seccion_bda.id,
-        usuario_id_creacion=docente_rojas.id,
-        estado="ENVIADA",
-        fecha_envio=datetime.now(),
-        observaciones="Acta de base de datos avanzada enviada para consolidación."
-    )
-    acta_daw = Acta(
-        seccion_id=seccion_daw.id,
-        usuario_id_creacion=docente_jaime.id,
-        estado="BORRADOR",
-        observaciones="Borrador de desarrollo de aplicaciones web."
-    )
-    db.session.add_all([acta_bda, acta_daw])
+    # Carlos Rojas (BDA: ENVIADA, Redes: BORRADOR)
+    acta_bda = Acta(seccion_id=seccion_bda.id, usuario_id_creacion=docente_rojas.id, estado="ENVIADA", fecha_envio=datetime.now(), observaciones="Acta de BDA avanzada enviada.")
+    acta_redes = Acta(seccion_id=seccion_redes.id, usuario_id_creacion=docente_rojas.id, estado="BORRADOR", observaciones="Borrador de Redes II.")
+    
+    # Jaime Suasnábar (DAW: BORRADOR, Calidad: ENVIADA)
+    acta_daw = Acta(seccion_id=seccion_daw.id, usuario_id_creacion=docente_jaime.id, estado="BORRADOR", observaciones="Borrador de DAW.")
+    acta_calidad = Acta(seccion_id=seccion_calidad.id, usuario_id_creacion=docente_jaime.id, estado="ENVIADA", fecha_envio=datetime.now(), observaciones="Acta de Calidad de Software enviada.")
+    
+    db.session.add_all([acta_bda, acta_redes, acta_daw, acta_calidad])
     db.session.commit()
 
     # 12. Logs de Auditoría
