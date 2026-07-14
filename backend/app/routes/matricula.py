@@ -469,11 +469,13 @@ def descargar_ficha(solicitud_id):
     qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white")
     
-    qr_io = BytesIO()
-    qr_img.save(qr_io, format='PNG')
-    qr_io.seek(0)
-    
-    flowable_qr = Image(qr_io, width=70, height=70)
+    import tempfile
+    import os
+    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+        temp_path = temp_file.name
+        qr_img.save(temp_path, format='PNG')
+        
+    flowable_qr = Image(temp_path, width=70, height=70)
     
     # Tabla con firma / QR
     pie_data = [
@@ -487,6 +489,12 @@ def descargar_ficha(solicitud_id):
     story.append(t_pie)
 
     doc.build(story)
+    
+    try:
+        os.remove(temp_path)
+    except Exception:
+        pass
+        
     pdf_buffer.seek(0)
     return send_file(pdf_buffer, mimetype='application/pdf', download_name=f"Ficha_Matricula_{estudiante.username}_{solicitud.periodo.ciclo}.pdf")
 
