@@ -842,21 +842,45 @@ function App() {
           )}
 
           {/* Quick Access Helper (Credenciales Rápidas) */}
-          <div className="login-assistant-card">
-            <h4>Acceso de Prueba Rápido (Seeding Académico)</h4>
-            <div className="login-assistant-grid">
-              <button onClick={() => handleQuickLogin('admin', 'admin123')} style={{ padding: '8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', background: '#fff' }}>
-                <strong>Admin:</strong> admin / admin123
-              </button>
-              <button onClick={() => handleQuickLogin('docente', 'docente123')} style={{ padding: '8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', background: '#fff' }}>
-                <strong>Docente:</strong> docente / docente123
-              </button>
-              <button onClick={() => handleQuickLogin('student', 'student123')} style={{ padding: '8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', background: '#fff' }}>
-                <strong>Estudiante:</strong> student / student123
-              </button>
-              <button onClick={() => handleQuickLogin('director', 'director123')} style={{ padding: '8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', background: '#fff' }}>
-                <strong>Dirección:</strong> director / director123
-              </button>
+          <div className="login-assistant-card" style={{ width: '100%', marginTop: '20px' }}>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--primary)', marginBottom: '12px' }}>
+              <i className="fa-solid fa-key"></i> Acceso Rápido de Prueba (ERP Académico)
+            </h4>
+            
+            <div style={{ marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>ROLES INSTITUCIONALES</span>
+              <div className="login-assistant-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                <button onClick={() => handleQuickLogin('admin', 'admin123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Admin:</strong> admin
+                </button>
+                <button onClick={() => handleQuickLogin('docente', 'docente123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Docente Rojas:</strong> docente
+                </button>
+                <button onClick={() => handleQuickLogin('jsuasnabar', 'docente123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Docente Suasnábar:</strong> jsuasnabar
+                </button>
+                <button onClick={() => handleQuickLogin('director', 'director123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Decano:</strong> director
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>ESTUDIANTES (DIFERENTES ESTADOS EN BASE DE DATOS)</span>
+              <div className="login-assistant-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '8px' }}>
+                <button onClick={() => handleQuickLogin('student', 'student123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Matriculado (Juan):</strong> student
+                </button>
+                <button onClick={() => handleQuickLogin('camila', 'student123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Matriculada (Camila):</strong> camila
+                </button>
+                <button onClick={() => handleQuickLogin('irma', 'student123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Pago Pendiente (Irma):</strong> irma
+                </button>
+                <button onClick={() => handleQuickLogin('nicole', 'student123')} style={{ padding: '6px 8px', cursor: 'pointer', border: '1px solid var(--border-color)', borderRadius: '4px', textAlign: 'left', fontSize: '0.72rem', background: '#fff' }}>
+                  <strong>Por Matricularse (Nicole):</strong> nicole
+                </button>
+              </div>
             </div>
           </div>
         </div>
