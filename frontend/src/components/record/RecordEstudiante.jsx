@@ -33,7 +33,10 @@ export default function RecordEstudiante({ token, estudianteId }) {
   const descargarPDF = () => {
     // Si somos admin pasamos estudianteId, si somos estudiante usamos el id del usuario logueado
     const id = estudianteId || JSON.parse(localStorage.getItem('user'))?.id;
-    window.open(`http://localhost:5000/api/record/estudiante/${id}/pdf`, '_blank');
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:5000' 
+      : window.location.origin;
+    window.open(`${baseUrl}/api/record/estudiante/${id}/pdf`, '_blank');
   };
 
   if (cargando) {

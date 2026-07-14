@@ -27,9 +27,11 @@ export default function MisMatriculas({ token, alSolicitarNueva }) {
     }
   };
 
-  // Abre la ficha PDF oficial generada por el backend
   const descargarFicha = (id) => {
-    window.open(`http://localhost:5000/api/matricula/${id}/ficha`, '_blank');
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:5000' 
+      : window.location.origin;
+    window.open(`${baseUrl}/api/matricula/${id}/ficha`, '_blank');
   };
 
   return (
