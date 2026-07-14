@@ -120,7 +120,7 @@ function App() {
         fetchNotasEstudiante();
       } else if (activeTab === 'certificados_estudiante' && user?.role === 'estudiante') {
         fetchDocumentosEstudiante();
-      } else if (activeTab === 'cursos_docente' && user?.role === 'docente') {
+      } else if ((activeTab === 'cursos_docente' || activeTab === 'inicio') && user?.role === 'docente') {
         fetchSeccionesDocente();
       } else if (activeTab === 'supervision_direccion' && (user?.role === 'direccion' || user?.role === 'administrador')) {
         fetchSupervisionDireccion();
@@ -1193,12 +1193,12 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>SECCIONES ASIGNADAS</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>3 Cursos</h3>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{seccionesDocente.length} {seccionesDocente.length === 1 ? 'Curso' : 'Cursos'}</h3>
                     <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)' }}>Ciclo Académico 2026-I</span>
                   </div>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ESTUDIANTES REGISTRADOS</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>92 Alumnos</h3>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{seccionesDocente.reduce((acc, s) => acc + (s.cantidad_estudiantes || 0), 0)} Alumnos</h3>
                     <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}><i className="fa-solid fa-user-graduate"></i> En Aula Virtual</span>
                   </div>
                 </div>

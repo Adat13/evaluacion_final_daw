@@ -151,6 +151,16 @@ def seed_rich_data():
     est_perfiles = []
     est_angel_list = []
     estudiantes_list = [student_juan, est_camila, est_jhomer, est_irma, est_nicole, est_sully, est_cristopher]
+    codigos_mapeo = {
+        "student": "2022100451",
+        "camila": "2022100811",
+        "jhomer": "2022200234",
+        "irma": "2022200456",
+        "nicole": "2022100344",
+        "sully": "2022100789",
+        "cristopher": "2022100912"
+    }
+
     for e in estudiantes_list:
         p = EstudiantePerfil(
             user_id=e.id,
@@ -168,7 +178,7 @@ def seed_rich_data():
         est_angel = Estudiante(
             user_id=e.id,
             especialidad_id=especialidad.id,
-            codigo_estudiante=e.username
+            codigo_estudiante=codigos_mapeo.get(e.username, e.username)
         )
         db.session.add(est_angel)
         est_angel_list.append(est_angel)
@@ -188,32 +198,44 @@ def seed_rich_data():
     db.session.commit()
 
     # 8. Matrículas y Notas de Curso (Angel)
-    # Juan Pérez (Ya matriculado formalmente)
-    mat_juan = Matricula(estudiante_id=est_angel_list[0].id, periodo_id=p_2026_1.id, costo_total=200.00, estado_pago="pagado", fecha_matricula=datetime.now(), estado_matricula="aprobada")
-    db.session.add(mat_juan)
-    db.session.commit()
-
-    det_juan_daw = DetalleMatricula(matricula_id=mat_juan.id, seccion_id=seccion_daw.id, estado_curso="cursando")
-    det_juan_bda = DetalleMatricula(matricula_id=mat_juan.id, seccion_id=seccion_bda.id, estado_curso="cursando")
-    db.session.add_all([det_juan_daw, det_juan_bda])
-    db.session.commit()
-
-    # Agregar notas parciales a Juan Pérez
-    nota_juan_daw = Nota(detalle_matricula_id=det_juan_daw.id, nota_parcial1=16.00, nota_parcial2=15.00, evaluacion_continua=17.00, examen_final=0.00, promedio_final=12.20, consolidada=False)
-    nota_juan_bda = Nota(detalle_matricula_id=det_juan_bda.id, nota_parcial1=14.00, nota_parcial2=16.00, evaluacion_continua=15.00, examen_final=0.00, promedio_final=11.25, consolidada=False)
-    db.session.add_all([nota_juan_daw, nota_juan_bda])
-
-    # Camila Quispe (Ya matriculado formalmente)
-    mat_camila = Matricula(estudiante_id=est_angel_list[1].id, periodo_id=p_2026_1.id, costo_total=200.00, estado_pago="pagado", fecha_matricula=datetime.now(), estado_matricula="aprobada")
-    db.session.add(mat_camila)
-    db.session.commit()
-
-    det_camila_daw = DetalleMatricula(matricula_id=mat_camila.id, seccion_id=seccion_daw.id, estado_curso="cursando")
-    db.session.add(det_camila_daw)
-    db.session.commit()
-
-    nota_camila_daw = Nota(detalle_matricula_id=det_camila_daw.id, nota_parcial1=18.00, nota_parcial2=17.00, evaluacion_continua=19.00, examen_final=0.00, promedio_final=13.50, consolidada=False)
-    db.session.add(nota_camila_daw)
+    # Matriculamos a los 7 estudiantes en las dos secciones activas (DAW y BDA)
+    notas_predefinidas = [
+        (15.00, 16.00, 14.50, 0.00), # Juan
+        (18.00, 17.50, 19.00, 0.00), # Camila
+        (14.00, 13.00, 15.00, 0.00), # Jhomer
+        (12.00, 14.00, 13.00, 0.00), # Irma
+        (16.00, 15.00, 16.50, 0.00), # Nicole
+        (15.00, 16.00, 15.50, 0.00), # Sully
+        (11.00, 12.00, 13.00, 0.00)  # Cristopher
+    ]
+    
+    for idx, est_angel in enumerate(est_angel_list):
+        mat = Matricula(
+            estudiante_id=est_angel.id,
+            periodo_id=p_2026_1.id,
+            costo_total=250.00,
+            estado_pago="pagado",
+            fecha_matricula=datetime.now(),
+            estado_matricula="aprobada"
+        )
+        db.session.add(mat)
+        db.session.commit()
+        
+        # Enrolar en DAW y BDA
+        det_daw = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_daw.id, estado_curso="cursando")
+        det_bda = DetalleMatricula(matricula_id=mat.id, seccion_id=seccion_bda.id, estado_curso="cursando")
+        db.session.add_all([det_daw, det_bda])
+        db.session.commit()
+        
+        p1, p2, ec, ef = notas_predefinidas[idx]
+        prom_daw = round((p1 + p2 + ec + ef) / 4, 2)
+        
+        b1, b2, bec, bef = p1 - 1 if p1 > 5 else p1, p2, ec + 0.5 if ec < 19 else ec, 0.0
+        prom_bda = round((b1 + b2 + bec + bef) / 4, 2)
+        
+        nota_daw = Nota(detalle_matricula_id=det_daw.id, nota_parcial1=p1, nota_parcial2=p2, evaluacion_continua=ec, examen_final=ef, promedio_final=prom_daw, consolidada=False)
+        nota_bda = Nota(detalle_matricula_id=det_bda.id, nota_parcial1=b1, nota_parcial2=b2, evaluacion_continua=bec, examen_final=bef, promedio_final=prom_bda, consolidada=False)
+        db.session.add_all([nota_daw, nota_bda])
 
     # 9. Solicitudes de Matrícula (Modulo Benjamin)
     # Jhomer Saith (Solicitud Aprobada)
