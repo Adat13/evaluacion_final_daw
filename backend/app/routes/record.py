@@ -162,7 +162,7 @@ def descargar_record_pdf(estudiante_id):
     story.append(Spacer(1, 20))
 
     # QR de validación
-    verif_url = f"http://localhost:5000/api/record/verificar/{estudiante.username}"
+    verif_url = f"{request.host_url.rstrip('/')}/api/record/verificar/{estudiante.username}"
     qr = qrcode.QRCode(version=1, box_size=3, border=1)
     qr.add_data(verif_url)
     qr.make(fit=True)

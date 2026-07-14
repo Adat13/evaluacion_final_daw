@@ -256,7 +256,7 @@ def descargar_documento_emitido(id):
     story.append(Spacer(1, 30))
 
     # Sello/Firma digital simulada + QR de verificación
-    verif_url = f"http://localhost:5000/api/certificados/verificar/{sol.codigo}"
+    verif_url = f"{request.host_url.rstrip('/')}/api/certificados/verificar/{sol.codigo}"
     qr = qrcode.QRCode(version=1, box_size=3, border=1)
     qr.add_data(verif_url)
     qr.make(fit=True)
