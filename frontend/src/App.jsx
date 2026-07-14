@@ -1148,13 +1148,13 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>MÓDULO SEGURIDAD</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>JWT + BCrypt</h3>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}><i className="fa-solid fa-circle-check"></i> Activo & Protegido</span>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>Control de Accesos</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}><i className="fa-solid fa-circle-check"></i> Roles de Usuario Activos</span>
                   </div>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>USUARIOS REGISTRADOS</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>Base SQLite</h3>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)' }}><i className="fa-solid fa-database"></i> Datos Iniciales Sembrados</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>BASE DE DATOS</span>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>PostgreSQL</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}><i className="fa-solid fa-database"></i> Conexión de Producción</span>
                   </div>
                 </div>
               )}
@@ -1206,16 +1206,17 @@ function App() {
 
               <div className="card">
                 <div className="card-header">
-                  <h3 className="card-title"><i className="fa-solid fa-circle-info"></i> Estado del Entorno de Desarrollo</h3>
+                  <h3 className="card-title"><i className="fa-solid fa-circle-info"></i> Resumen del Sistema Académico (ERP)</h3>
                 </div>
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
-                  <p>Has configurado exitosamente la arquitectura del proyecto <strong>React + Flask</strong>. Como desarrollador del backend core, seguridad y administración (Angel), has implementado:</p>
+                  <p>Te encuentras en el panel de control institucional de la <strong>Facultad de Ingeniería de Sistemas (UNCP)</strong>. Como administrador de la plataforma, puedes supervisar y gestionar:</p>
                   <ul style={{ paddingLeft: '20px', marginTop: '10px' }}>
-                    <li><strong>Estructura base del monorepo</strong> dividida en frontend/ y backend/.</li>
-                    <li><strong>Seguridad por Roles & JWT</strong> en todas las APIs del backend con SQLite.</li>
-                    <li><strong>Bitácora de Auditoría en Base de Datos</strong> que registra inicios de sesión, cambios de contraseña y CRUD de usuarios de manera persistente.</li>
+                    <li><strong>Control de Matrícula y Secciones</strong>: Validación de requisitos, costos académicos y estados de pago.</li>
+                    <li><strong>Registro de Notas y Actas</strong>: Seguimiento a calificaciones parciales, consolidados académicos y actas firmadas.</li>
+                    <li><strong>Trámites y Certificados</strong>: Emisión de constancias de matrícula y notas certificadas con validación digital.</li>
+                    <li><strong>Bitácora de Auditoría en Tiempo Real</strong>: Control detallado de accesos, seguridad y acciones del personal.</li>
                   </ul>
-                  <p style={{ marginTop: '15px' }}>Tus compañeros del equipo pueden crear sus ramas e integrar sus respectivos módulos utilizando este entorno seguro como base.</p>
+                  <p style={{ marginTop: '15px' }}>Usa el menú de navegación lateral para acceder a cada uno de los submódulos integrados del ERP.</p>
                 </div>
               </div>
             </div>
