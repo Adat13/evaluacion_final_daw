@@ -77,6 +77,7 @@ function App() {
   const [notasEstudiante, setNotasEstudiante] = useState(null);
   const [documentosList, setDocumentosList] = useState([]);
   const [tipoDocSelect, setTipoDocSelect] = useState('constancia_matricula');
+  const [studentKpis, setStudentKpis] = useState(null);
   
   // Academic Modules State (Docente)
   const [seccionesDocente, setSeccionesDocente] = useState([]);
@@ -120,6 +121,8 @@ function App() {
         fetchNotasEstudiante();
       } else if (activeTab === 'certificados_estudiante' && user?.role === 'estudiante') {
         fetchDocumentosEstudiante();
+      } else if (activeTab === 'inicio' && user?.role === 'estudiante') {
+        fetchStudentKpis();
       } else if ((activeTab === 'cursos_docente' || activeTab === 'inicio') && user?.role === 'docente') {
         fetchSeccionesDocente();
       } else if (activeTab === 'supervision_direccion' && (user?.role === 'direccion' || user?.role === 'administrador')) {
@@ -531,6 +534,20 @@ function App() {
       fetchDocumentosEstudiante();
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const fetchStudentKpis = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/record/mi-record`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setStudentKpis(data.kpis);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1201,14 +1218,22 @@ function App() {
               {user?.role === 'estudiante' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>PROMEDIO PONDERADO</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>15.42</h3>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}><i className="fa-solid fa-award"></i> Tercio Superior</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>PROMEDIO PONDERADO ACUMULADO (PPA)</span>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>
+                      {studentKpis ? studentKpis.ppa : <i className="fa-solid fa-spinner fa-spin"></i>}
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>
+                      <i className="fa-solid fa-award"></i> {studentKpis && studentKpis.ppa >= 14 ? 'Tercio Superior' : 'Rendimiento Regular'}
+                    </span>
                   </div>
                   <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '120px', marginBottom: 0 }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>CRÉDITOS APROBADOS</span>
-                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>124 / 220</h3>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)' }}>Ciclo 2026-I</span>
+                    <h3 style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>
+                      {studentKpis ? `${studentKpis.creditos_aprobados} / ${studentKpis.total_plan}` : <i className="fa-solid fa-spinner fa-spin"></i>}
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)' }}>
+                      Avance de Carrera: {studentKpis ? `${studentKpis.avance}%` : 'Cargando...'}
+                    </span>
                   </div>
                 </div>
               )}
