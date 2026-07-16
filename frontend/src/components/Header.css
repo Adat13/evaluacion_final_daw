@@ -1,0 +1,232 @@
+/* Header Styles */
+.app-header {
+  height: var(--header-height);
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--primary);
+  transition: var(--transition);
+}
+
+.hamburger-btn:hover {
+  color: var(--primary-light);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-logos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-uncp, .logo-fis {
+  height: 42px;
+  object-fit: contain;
+}
+
+.logo-fis {
+  border-left: 1px solid var(--border-color);
+  padding-left: 10px;
+}
+
+.brand-info h1 {
+  font-size: 1.1rem;
+  color: var(--primary);
+  font-weight: 700;
+  margin: 0;
+}
+
+.brand-info p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.notification-container {
+  position: relative;
+}
+
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.notification-bell:hover {
+  color: var(--primary-light);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+.notifications-dropdown {
+  position: absolute;
+  top: 55px;
+  right: 0;
+  width: 320px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.notifications-header {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.notifications-header span {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.notifications-list {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.notification-item:hover {
+  background-color: var(--bg-body);
+}
+
+.notification-item.unread {
+  background-color: #f0f7ff;
+  font-weight: 600;
+}
+
+.notification-item-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.user-profile-header:hover {
+  background-color: var(--bg-body);
+  border-color: var(--border-color);
+}
+
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 2px solid var(--accent);
+}
+
+.user-info-text {
+  text-align: left;
+}
+
+.user-info-text .name {
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: block;
+  color: var(--primary);
+}
+
+.user-info-text .role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 15px;
+  }
+
+  .hamburger-btn {
+    display: inline-flex;
+  }
+
+  .brand-info {
+    display: none;
+  }
+
+  .user-info-text {
+    display: none;
+  }
+}

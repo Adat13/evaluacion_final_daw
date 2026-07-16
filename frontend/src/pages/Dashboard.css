@@ -1,0 +1,234 @@
+/* Dashboard Styles */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-header {
+  margin-bottom: 10px;
+}
+
+.dashboard-header h1 {
+  font-size: 2rem;
+  margin-bottom: 5px;
+  color: var(--primary);
+}
+
+.dashboard-header p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+  background-color: var(--bg-body);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.error-box {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.curso-name {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.promedio-cell {
+  color: var(--primary);
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+.dashboard-title i {
+  color: var(--primary-light);
+}
+
+/* Estilos para formularios en dashboards */
+.form-section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.form-section h3 {
+  margin-bottom: 15px;
+  font-size: 1.05rem;
+}
+
+.select-course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-top: 12px;
+}
+
+.course-item {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  background-color: var(--bg-card);
+  position: relative;
+}
+
+.course-item:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-item.selected {
+  border-color: var(--primary-light);
+  background-color: #f0f7ff;
+}
+
+.course-item-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.course-code {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background-color: var(--bg-body);
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.course-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+
+.course-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.course-meta span i {
+  width: 14px;
+  margin-right: 4px;
+}
+
+.course-select-check {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6rem;
+}
+
+.course-item.selected .course-select-check {
+  background-color: var(--primary-light);
+  border-color: var(--primary-light);
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  border-bottom: 3px solid transparent;
+  font-size: 0.9rem;
+}
+
+.tab-button:hover {
+  color: var(--primary);
+}
+
+.tab-button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* Progress Bar */
+.progress-container {
+  background-color: var(--border-color);
+  height: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 8px;
+  width: 0%;
+  transition: width 0.8s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .select-course-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group .btn {
+    width: 100%;
+  }
+}
